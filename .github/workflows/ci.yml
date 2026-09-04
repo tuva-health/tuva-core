@@ -703,8 +703,9 @@ jobs:
           )
           PY
 
-      # Standalone packages declare their released Core dependency. Resolve
-      # that graph first, then replace only Core with this PR's test merge.
+      # Resolve the standalone package graph first, then add this PR's test
+      # merge as the root project's Core dependency. Standalone packages must
+      # not bring their own Core dependency.
       - name: Resolve standalone package dependencies
         if: env.CI_SCOPE == 'all-packages'
         run: >-
@@ -712,7 +713,7 @@ jobs:
           --project-dir ./integration_tests
           --profiles-dir ./integration_tests/profiles/${{ matrix.warehouse }}
 
-      - name: Promote candidate Core in dependency lock
+      - name: Add candidate Core to dependency lock
         if: env.CI_SCOPE == 'all-packages'
         env:
           CI_SOURCE_LOCK: ${{ needs.resolve.outputs.source_lock }}
@@ -745,9 +746,10 @@ jobs:
               for item in locked_packages
               if item.get("name") == "the_tuva_project"
           ]
-          if len(core_entries) != 1:
+          if core_entries:
               raise SystemExit(
-                  "resolved package lock must contain exactly one Core dependency"
+                  "resolved standalone package lock must not contain Core; "
+                  "candidate Core is injected by the root project"
               )
 
           expected_packages = {
