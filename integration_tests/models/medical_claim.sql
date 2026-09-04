@@ -45,6 +45,7 @@
     , copayment_amount
     , deductible_amount
     , total_cost_amount
+    , cast(null as {{ dbt.type_float() }}) as paid_reduced_by
     , diagnosis_code_type
     , diagnosis_code_1
     , diagnosis_code_2

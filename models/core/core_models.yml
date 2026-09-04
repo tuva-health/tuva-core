@@ -2127,6 +2127,15 @@ models:
         config:
           meta:
             data_type: number
+      - name: paid_reduced_by
+        description: Amount by which the payer reduced its payment on the claim
+          line under a prospective or population-based payment arrangement, such
+          as the Medicare Population-Based Payment (PBP) reduction. paid_amount
+          reflects the payment after this reduction. Null when the source does
+          not report a reduction.
+        config:
+          meta:
+            data_type: number
       - name: in_network_flag
         description: Indicator for whether the claim was in network. Accepted values are
           1 for in network, 0 for out of network, and null when unknown.

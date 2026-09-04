@@ -45,6 +45,7 @@ select
     , copayment_amount
     , deductible_amount
     , total_cost_amount
+    , paid_reduced_by
     , diagnosis_code_type
     , diagnosis_code_1
     , diagnosis_code_2

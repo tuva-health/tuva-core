@@ -704,6 +704,8 @@ models:
         description: The total amount charged on the claim by the provider.
       - name: total_cost_amount
         description: The total amount paid on the claim by different parties.
+      - name: paid_reduced_by
+        description: The amount by which the payer reduced its payment on the claim line under a prospective or population-based payment arrangement.
       - name: diagnosis_code_type
         description: Indicates the type of diagnosis code (e.g. ICD-10-CM).
         config:

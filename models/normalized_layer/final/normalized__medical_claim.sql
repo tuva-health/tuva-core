@@ -64,6 +64,7 @@ select
     , cast(med.copayment_amount as {{ dbt.type_numeric() }}) as copayment_amount
     , cast(med.deductible_amount as {{ dbt.type_numeric() }}) as deductible_amount
     , cast(med.total_cost_amount as {{ dbt.type_numeric() }}) as total_cost_amount
+    , cast(med.paid_reduced_by as {{ dbt.type_numeric() }}) as paid_reduced_by
     , cast(med.diagnosis_code_type as {{ dbt.type_string() }}) as diagnosis_code_type
     {% for i in index_cols %}
     , cast(replace(med.diagnosis_code_{{ i }}, '.', '') as {{ dbt.type_string() }}) as diagnosis_code_{{ i }}
