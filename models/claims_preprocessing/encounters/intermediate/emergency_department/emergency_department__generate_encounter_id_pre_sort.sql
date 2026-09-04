@@ -18,7 +18,7 @@ with claim_start_end as (
       enc.claim_id
     , enc.patient_data_source_id
     , c.start_date
-    , c.end_date
+    , coalesce(c.end_date, c.start_date) as end_date -- Avoids large length of stay gaps being combined
     , enc.facility_npi
     , enc.discharge_disposition_code
     , enc.claim_type  -- 'institutional' | 'professional'

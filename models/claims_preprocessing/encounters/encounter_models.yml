@@ -5256,7 +5256,16 @@ models:
       tags:
         - claims_preprocessing
         - encounters
-
+    columns:
+      - name: end_date
+        description: The discharge date or end date of the claim if discharge date is null.
+        tests:
+          - not_null:
+              description: >
+                If this is null, the end date will default to the start date for encounters to ensure the encounter is not open-ended and 
+                prevents grouping encounters far into the future.
+              config:
+                severity: warn
   - name: encounters__prof_and_lower_priority
     description: adding in lower priority institutional claims in one location with professional for grouping to higher level encounters
     config:
