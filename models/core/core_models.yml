@@ -2956,6 +2956,23 @@ models:
           meta:
             terminology: https://thetuvaproject.com/terminology/ethnicity
             data_type: varchar
+      - name: race_ethnicity
+        description: >-
+          Single standardized race/ethnicity category aligned with the 2024 OMB
+          SPD 15 minimum categories (American Indian or Alaska Native, Asian,
+          Black or African American, Hispanic or Latino, Middle Eastern or North
+          African, Native Hawaiian or Pacific Islander, White). Derived from the
+          race and ethnicity columns using a Hispanic-ethnicity-first
+          convention: when ethnicity is Hispanic or Latino the category is
+          Hispanic or Latino, otherwise the mapped race category is used. Values
+          that cannot be classified into an OMB minimum category (other race,
+          asked but unknown, unknown, or missing) are null. Middle Eastern or
+          North African is not present in the legacy race terminology, so it only
+          appears when a source explicitly supplies it. The original race and
+          ethnicity columns are unchanged.
+        config:
+          meta:
+            data_type: varchar
       - name: age
         description: Patient age calculated from birth_date and tuva_last_run.
         config:
