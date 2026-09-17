@@ -4633,7 +4633,11 @@ models:
       materialized: table
     description: >
       Adds service categories to claims and sums paid and allowed amounts to the
-      year-month level.
+      year-month level. Claims are assigned to a year-month with the shared
+      selected-claim-date contract (claim line start date, claim start date,
+      admission date, then claim end date), matching claims enrollment flagging
+      so enrollment attribution and PMPM cost reporting always agree on the
+      claim month.
 
   - name: int_cost_service_category_1_allowed_pivot
     config:

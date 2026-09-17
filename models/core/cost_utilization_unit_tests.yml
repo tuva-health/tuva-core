@@ -299,3 +299,290 @@ unit_tests:
           inpatient_count: 1
           acute_inpatient_count: 1
           data_source: source-1
+
+  - name: test_int_cost_service_categories_uses_line_start_for_claim_month
+    description: >-
+      Cross-month claim lines must allocate cost to the same month that claims
+      enrollment flagging assigns them to. Regression test for #1140: cost
+      previously used coalesce(claim_start_date, claim_end_date) while
+      enrollment used the line start date, so a line with a February line
+      start and a January claim start was enrolled in February while its spend
+      was reported in January. With February-only coverage the spend was
+      silently dropped from Core cost.
+    model: int_cost_service_categories
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-02-01 00:00:00'
+    given:
+      - input: ref('core__medical_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast('2024-02-02' as date) as claim_line_start_date
+            , cast('2024-01-31' as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast('2024-02-03' as date) as claim_end_date
+            , 'outpatient' as service_category_1
+            , 'outpatient hospital or clinic' as service_category_2
+            , 100 as paid_amount
+            , 200 as allowed_amount
+      - input: ref('core__pharmacy_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set numeric_type = 'numeric' %}
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              cast(null as {{ string_type }}) as person_id
+            , cast(null as {{ string_type }}) as member_id
+            , cast(null as {{ string_type }}) as payer
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as date) as dispensing_date
+            , cast(null as date) as paid_date
+            , cast(null as {{ numeric_type }}) as paid_amount
+            , cast(null as {{ numeric_type }}) as allowed_amount
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture
+          where 1 = 0
+    expect:
+      rows:
+        - person_id: person-1
+          member_id: member-1
+          payer: payer-1
+          plan: plan-1
+          data_source: source-1
+          year_month: '202402'
+          service_category_1: outpatient
+          service_category_2: outpatient hospital or clinic
+          total_paid: 100
+          total_allowed: 200
+
+  - name: test_int_cost_service_categories_claim_date_fallback_chain
+    description: >-
+      Locks the shared selected-claim-date contract fallbacks in Core cost:
+      admission date is used when no start dates exist, claim end date is the
+      final fallback for end-date-only sources, and all-null dates produce a
+      null month instead of an arbitrary one.
+    model: int_cost_service_categories
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-02-01 00:00:00'
+    given:
+      - input: ref('core__medical_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'person-2' as person_id
+            , 'member-2' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast(null as date) as claim_line_start_date
+            , cast(null as date) as claim_start_date
+            , cast('2024-04-10' as date) as admission_date
+            , cast(null as date) as claim_end_date
+            , 'outpatient' as service_category_1
+            , 'outpatient hospital or clinic' as service_category_2
+            , 50 as paid_amount
+            , 60 as allowed_amount
+          union all
+          select
+              'person-3' as person_id
+            , 'member-3' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast(null as date) as claim_line_start_date
+            , cast(null as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast('2024-03-15' as date) as claim_end_date
+            , 'outpatient' as service_category_1
+            , 'outpatient hospital or clinic' as service_category_2
+            , 70 as paid_amount
+            , 80 as allowed_amount
+          union all
+          select
+              'person-4' as person_id
+            , 'member-4' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast(null as date) as claim_line_start_date
+            , cast(null as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast(null as date) as claim_end_date
+            , 'outpatient' as service_category_1
+            , 'outpatient hospital or clinic' as service_category_2
+            , 90 as paid_amount
+            , 95 as allowed_amount
+      - input: ref('core__pharmacy_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set numeric_type = 'numeric' %}
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              cast(null as {{ string_type }}) as person_id
+            , cast(null as {{ string_type }}) as member_id
+            , cast(null as {{ string_type }}) as payer
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as date) as dispensing_date
+            , cast(null as date) as paid_date
+            , cast(null as {{ numeric_type }}) as paid_amount
+            , cast(null as {{ numeric_type }}) as allowed_amount
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture
+          where 1 = 0
+    expect:
+      rows:
+        - person_id: person-2
+          year_month: '202404'
+          total_paid: 50
+        - person_id: person-3
+          year_month: '202403'
+          total_paid: 70
+        - person_id: person-4
+          year_month:
+          total_paid: 90
+
+  - name: test_int_cost_service_categories_parity_for_same_month_claims
+    description: >-
+      Parity coverage for #1140: claims whose dates all fall in one month must
+      keep the same reported month as before the shared contract change, so
+      the fix only moves spend for genuinely cross-month or date-sparse
+      claims.
+    model: int_cost_service_categories
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-02-01 00:00:00'
+    given:
+      - input: ref('core__medical_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'person-5' as person_id
+            , 'member-5' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast('2024-01-05' as date) as claim_line_start_date
+            , cast('2024-01-02' as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast('2024-01-10' as date) as claim_end_date
+            , 'outpatient' as service_category_1
+            , 'outpatient hospital or clinic' as service_category_2
+            , 110 as paid_amount
+            , 220 as allowed_amount
+      - input: ref('core__pharmacy_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set numeric_type = 'numeric' %}
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              cast(null as {{ string_type }}) as person_id
+            , cast(null as {{ string_type }}) as member_id
+            , cast(null as {{ string_type }}) as payer
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as date) as dispensing_date
+            , cast(null as date) as paid_date
+            , cast(null as {{ numeric_type }}) as paid_amount
+            , cast(null as {{ numeric_type }}) as allowed_amount
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture
+          where 1 = 0
+    expect:
+      rows:
+        - person_id: person-5
+          year_month: '202401'
+          total_paid: 110
+          total_allowed: 220
+
+  - name: test_int_cost_service_categories_pharmacy_claim_month
+    description: >-
+      Locks the pharmacy claim-month contract in Core cost: the dispensing
+      date selects the month when present, otherwise the paid date does. This
+      behavior is unchanged by #1140; the test pins it so future
+      standardization work cannot move pharmacy spend silently.
+    model: int_cost_service_categories
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-02-01 00:00:00'
+    given:
+      - input: ref('core__pharmacy_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'person-6' as person_id
+            , 'member-6' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast('2024-02-10' as date) as dispensing_date
+            , cast('2024-03-05' as date) as paid_date
+            , 40 as paid_amount
+            , 45 as allowed_amount
+          union all
+          select
+              'person-7' as person_id
+            , 'member-7' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast(null as date) as dispensing_date
+            , cast('2024-05-20' as date) as paid_date
+            , 55 as paid_amount
+            , 66 as allowed_amount
+      - input: ref('core__medical_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set numeric_type = 'numeric' %}
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              cast(null as {{ string_type }}) as person_id
+            , cast(null as {{ string_type }}) as member_id
+            , cast(null as {{ string_type }}) as payer
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as date) as claim_line_start_date
+            , cast(null as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast(null as date) as claim_end_date
+            , cast(null as {{ string_type }}) as service_category_1
+            , cast(null as {{ string_type }}) as service_category_2
+            , cast(null as {{ numeric_type }}) as paid_amount
+            , cast(null as {{ numeric_type }}) as allowed_amount
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture
+          where 1 = 0
+    expect:
+      rows:
+        - person_id: person-6
+          year_month: '202402'
+          service_category_1: pharmacy
+          total_paid: 40
+        - person_id: person-7
+          year_month: '202405'
+          service_category_1: pharmacy
+          total_paid: 55
