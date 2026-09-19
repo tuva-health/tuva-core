@@ -156,8 +156,8 @@ models:
               - condition_id
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_core
+        {% else %}core{%- endif -%}
       alias: int_condition_from_claims
       tags: core
       materialized: table
@@ -250,8 +250,8 @@ models:
               - procedure_id
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_core
+        {% else %}core{%- endif -%}
       alias: int_procedure_from_claims
       tags: core
       materialized: table
@@ -4624,8 +4624,8 @@ models:
   - name: int_cost_service_categories
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_core
+        {% else %}core{%- endif -%}
       alias: int_cost_service_categories
       tags:
         - core
@@ -4638,8 +4638,8 @@ models:
   - name: int_cost_service_category_1_allowed_pivot
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_core
+        {% else %}core{%- endif -%}
       alias: int_cost_service_category_1_allowed_pivot
       tags:
         - core
@@ -4651,8 +4651,8 @@ models:
   - name: int_cost_service_category_2_allowed_pivot
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_core
+        {% else %}core{%- endif -%}
       alias: int_cost_service_category_2_allowed_pivot
       tags:
         - core
@@ -4664,8 +4664,8 @@ models:
   - name: int_cost_service_category_1_paid_pivot
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_core
+        {% else %}core{%- endif -%}
       alias: int_cost_service_category_1_paid_pivot
       tags:
         - core
@@ -4677,8 +4677,8 @@ models:
   - name: int_cost_service_category_2_paid_pivot
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_core
+        {% else %}core{%- endif -%}
       alias: int_cost_service_category_2_paid_pivot
       tags:
         - core
