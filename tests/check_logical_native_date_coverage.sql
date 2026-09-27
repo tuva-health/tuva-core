@@ -77,6 +77,9 @@ with temporal_input_columns as (
 select *
 from coverage_violations
 
+{% if (the_tuva_project.tuva_boolean_var('claims_enabled', false))
+      and (the_tuva_project.tuva_boolean_var('clinical_enabled', false))
+      and (the_tuva_project.tuva_boolean_var('provider_attribution_enabled', false)) %}
 union all
 
 select
@@ -102,3 +105,4 @@ select
     , cast(null as {{ dbt.type_int() }}) as maximum_severity
 from temporal_column_counts
 where timestamp_column_count <> 19
+{% endif %}
