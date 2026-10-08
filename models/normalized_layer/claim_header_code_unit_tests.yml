@@ -1,0 +1,174 @@
+version: 2
+
+unit_tests:
+  - name: test_drg_voting_zero_pads_codes_to_terminology_width
+    description: >-
+      Proves that MS-DRG and APR-DRG codes sent without leading zeros or with
+      surrounding whitespace match the three-digit terminology codes, and that
+      a longer code is never truncated into a false match.
+    model: normalized_input__int_drg_voting
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized_input__stg_medical_claim')
+        format: sql
+        rows: |
+          select 'claim-1' as claim_id, 'source' as data_source, 'institutional' as claim_type, 'ms-drg' as drg_code_type, '65' as drg_code
+          union all
+          select 'claim-2', 'source', 'institutional', 'apr-drg', ' 4 '
+          union all
+          select 'claim-3', 'source', 'institutional', 'ms-drg', '0470'
+      - input: ref('terminology__ms_drg')
+        format: sql
+        rows: |
+          select '065' as ms_drg_code, 'Intracranial Hemorrhage or Cerebral Infarction with CC or TPA in 24 Hours' as ms_drg_description
+          union all
+          select '047', 'Transient Ischemia without Thrombolytic'
+      - input: ref('terminology__apr_drg')
+        format: sql
+        rows: |
+          select '004' as apr_drg_code, 'TRACHEOSTOMY WITH MV >96 HOURS WITH EXTENSIVE PROCEDURE' as apr_drg_description
+    expect:
+      rows:
+        - {claim_id: claim-1, normalized_code: '065', normalized_description: Intracranial Hemorrhage or Cerebral Infarction with CC or TPA in 24 Hours}
+        - {claim_id: claim-2, normalized_code: '004', normalized_description: TRACHEOSTOMY WITH MV >96 HOURS WITH EXTENSIVE PROCEDURE}
+
+  - name: test_discharge_disposition_voting_zero_pads_codes_to_terminology_width
+    description: >-
+      Proves that discharge disposition codes sent without a leading zero or
+      with surrounding whitespace match the two-digit terminology codes, that
+      a longer code is never truncated into a false match, and that a blank
+      code is never padded into the '00' unknown-value code.
+    model: normalized_input__int_discharge_disposition_voting
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized_input__stg_medical_claim')
+        format: sql
+        rows: |
+          select 'claim-1' as claim_id, 'source' as data_source, 'institutional' as claim_type, '1' as discharge_disposition_code
+          union all
+          select 'claim-2', 'source', 'institutional', ' 6 '
+          union all
+          select 'claim-3', 'source', 'institutional', '010'
+          union all
+          select 'claim-4', 'source', 'institutional', ' '
+          union all
+          select 'claim-5', 'source', 'institutional', ''
+      - input: ref('terminology__discharge_disposition')
+        format: sql
+        rows: |
+          select '00' as discharge_disposition_code, 'Unknown Value (but present in data)' as discharge_disposition_description
+          union all
+          select '01', 'Discharged to home/self-care (routine charge)'
+          union all
+          select '06', 'Discharged/transferred to home under care of organized home health service organization'
+    expect:
+      rows:
+        - {claim_id: claim-1, normalized_code: '01', normalized_description: Discharged to home/self-care (routine charge)}
+        - {claim_id: claim-2, normalized_code: '06', normalized_description: Discharged/transferred to home under care of organized home health service organization}
+
+  - name: test_undetermined_claim_type_cleans_and_pads_codes
+    description: >-
+      Proves that the undetermined-claim fallback path applies the same code
+      formatting tolerance as the voted claim-header path. DRG and discharge
+      disposition codes are zero-padded to the terminology width, and header
+      procedure codes are cleaned of case, whitespace, and decimal points.
+    model: normalized_input__int_undetermined_claim_type
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized_input__stg_medical_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set null_columns = [
+              'person_id', 'member_id', 'payer', 'claim_start_date', 'claim_end_date',
+              'claim_line_start_date', 'claim_line_end_date', 'admission_date', 'discharge_date',
+              'admit_source_code', 'admit_type_code', 'place_of_service_code', 'bill_type_code',
+              'revenue_center_code', 'service_unit_quantity', 'hcpcs_code',
+              'hcpcs_modifier_1', 'hcpcs_modifier_2', 'hcpcs_modifier_3', 'hcpcs_modifier_4', 'hcpcs_modifier_5',
+              'rendering_npi', 'billing_npi', 'facility_npi', 'paid_date', 'paid_amount', 'allowed_amount',
+              'charge_amount', 'coinsurance_amount', 'copayment_amount', 'deductible_amount',
+              'total_cost_amount', 'diagnosis_code_type', 'procedure_code_type'
+          ] %}
+          {% set rows = [
+              ('claim-1', 'ms-drg', '65', '1', ' 0dtj4.zz'),
+              ('claim-2', 'apr-drg', ' 4 ', ' ', '0DTJ4ZZ')
+          ] %}
+          {% for claim_id, drg_code_type, drg_code, discharge_code, procedure_code in rows %}
+          select
+              '{{ claim_id }}' as claim_id
+            , 1 as claim_line_number
+            , 'undetermined' as claim_type
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            {% for column in null_columns %}
+            , cast(null as {{ string_type }}) as {{ column }}
+            {% endfor %}
+            , '{{ drg_code_type }}' as drg_code_type
+            , '{{ drg_code }}' as drg_code
+            , '{{ discharge_code }}' as discharge_disposition_code
+            {% for i in range(1, 26) %}
+            , cast(null as {{ string_type }}) as diagnosis_code_{{ i }}
+            , cast(null as {{ string_type }}) as diagnosis_poa_{{ i }}
+            , {% if i == 1 %}'{{ procedure_code }}'{% else %}cast(null as {{ string_type }}){% endif %} as procedure_code_{{ i }}
+            , cast(null as date) as procedure_date_{{ i }}
+            {% endfor %}
+            , 'source' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('terminology__admit_source')
+        format: sql
+        rows: |
+          select '1' as admit_source_code, 'Non-Health Care Facility Point of Origin' as admit_source_description
+      - input: ref('terminology__admit_type')
+        format: sql
+        rows: |
+          select '1' as admit_type_code, 'Emergency' as admit_type_description
+      - input: ref('terminology__discharge_disposition')
+        format: sql
+        rows: |
+          select '00' as discharge_disposition_code, 'Unknown Value (but present in data)' as discharge_disposition_description
+          union all
+          select '01', 'Discharged to home/self-care (routine charge)'
+      - input: ref('terminology__place_of_service')
+        format: sql
+        rows: |
+          select '11' as place_of_service_code, 'Office' as place_of_service_description
+      - input: ref('terminology__bill_type')
+        format: sql
+        rows: |
+          select '111' as bill_type_code, 'Hospital Inpatient Admit Through Discharge Claim' as bill_type_description
+      - input: ref('terminology__ms_drg')
+        format: sql
+        rows: |
+          select '065' as ms_drg_code, 'Intracranial Hemorrhage or Cerebral Infarction with CC or TPA in 24 Hours' as ms_drg_description
+      - input: ref('terminology__apr_drg')
+        format: sql
+        rows: |
+          select '004' as apr_drg_code, 'TRACHEOSTOMY WITH MV >96 HOURS WITH EXTENSIVE PROCEDURE' as apr_drg_description
+      - input: ref('terminology__revenue_center')
+        format: sql
+        rows: |
+          select '0450' as revenue_center_code, 'Emergency Room' as revenue_center_description
+      - input: ref('provider_data__provider')
+        format: sql
+        rows: |
+          select '1234567890' as npi
+    expect:
+      rows:
+        - {claim_id: claim-1, drg_code: '065', discharge_disposition_code: '01', procedure_code_1: 0DTJ4ZZ}
+        - {claim_id: claim-2, drg_code: '004', discharge_disposition_code: null, procedure_code_1: 0DTJ4ZZ}

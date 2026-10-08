@@ -13,10 +13,10 @@ with normalize_cte as (
     from {{ ref('normalized_input__stg_medical_claim') }} as med
     left outer join {{ ref('terminology__ms_drg') }} as msdrg
         on med.drg_code_type = 'ms-drg'
-        and med.drg_code = msdrg.ms_drg_code
+        and {{ the_tuva_project.zero_pad_code('med.drg_code', 3) }} = msdrg.ms_drg_code
     left outer join {{ ref('terminology__apr_drg') }} as aprdrg
         on med.drg_code_type = 'apr-drg'
-        and med.drg_code = aprdrg.apr_drg_code
+        and {{ the_tuva_project.zero_pad_code('med.drg_code', 3) }} = aprdrg.apr_drg_code
     where claim_type = 'institutional'
 )
 

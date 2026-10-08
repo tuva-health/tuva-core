@@ -174,7 +174,8 @@ models:
       - name: code_system
         description: Diagnosis code system for source_code and normalized_code.
       - name: source_code
-        description: Diagnosis code from the source claim after removing decimal formatting.
+        description: Diagnosis code from the source claim after removing decimal
+          points and surrounding whitespace and converting to upper case.
       - name: normalized_code
         description: Diagnosis code after matching to Tuva terminology.
       - name: data_source
@@ -213,7 +214,9 @@ models:
       - name: code_system
         description: Procedure code system for source_code and normalized_code.
       - name: source_code
-        description: Procedure code from the source claim.
+        description: Procedure code from the source claim. Header ICD procedure codes
+          have decimal points and surrounding whitespace removed and are converted
+          to upper case; HCPCS codes are passed through as supplied.
       - name: normalized_code
         description: Procedure code after matching to Tuva terminology.
       - name: ingest_datetime
@@ -610,6 +613,8 @@ models:
       - name: discharge_disposition_code
         description: >
           Indicates the type of setting the patient was discharged to  (institutional inpatient claims only).
+          Returned as the two-digit Tuva terminology code; codes sent without a
+          leading zero are zero-padded before matching.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/discharge-disposition
@@ -626,7 +631,9 @@ models:
       - name: drg_code_type
         description: 'The DRG system used for the claim.'
       - name: drg_code
-        description: 'The DRG code on the claim.'
+        description: >
+          The DRG code on the claim, as the three-digit Tuva terminology code. Codes
+          sent without leading zeros are zero-padded before matching.
       - name: revenue_center_code
         description: >
           Revenue center code for the claim line (institutional only and  typically multiple codes per claim).
@@ -710,151 +717,151 @@ models:
           meta:
             terminology: https://thetuvaproject.com/terminology/code-type
       - name: diagnosis_code_1
-        description: 1st ICD (9 or 10) CM diagnosis code on the claim.
+        description: 1st ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_2
-        description: 2nd ICD (9 or 10) CM diagnosis code on the claim.
+        description: 2nd ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_3
-        description: 3rd ICD (9 or 10) CM diagnosis code on the claim.
+        description: 3rd ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_4
-        description: 4th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 4th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_5
-        description: 5th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 5th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_6
-        description: 6th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 6th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_7
-        description: 7th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 7th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_8
-        description: 8th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 8th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_9
-        description: 9th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 9th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_10
-        description: 10th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 10th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_11
-        description: 11th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 11th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_12
-        description: 12th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 12th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_13
-        description: 13th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 13th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_14
-        description: 14th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 14th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_15
-        description: 15th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 15th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_16
-        description: 16th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 16th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_17
-        description: 17th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 17th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_18
-        description: 18th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 18th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_19
-        description: 19th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 19th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_20
-        description: 20th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 20th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_21
-        description: 21st ICD (9 or 10) CM diagnosis code on the claim.
+        description: 21st ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_22
-        description: 22nd ICD (9 or 10) CM diagnosis code on the claim.
+        description: 22nd ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_23
-        description: 23rd ICD (9 or 10) CM diagnosis code on the claim.
+        description: 23rd ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_24
-        description: 24th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 24th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: diagnosis_code_25
-        description: 25th ICD (9 or 10) CM diagnosis code on the claim.
+        description: 25th ICD (9 or 10) CM diagnosis code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-cm
@@ -1015,151 +1022,151 @@ models:
           meta:
             terminology: https://thetuvaproject.com/terminology/code-type
       - name: procedure_code_1
-        description: 1st ICD (9 or 10) procedure code on the claim.
+        description: 1st ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_2
-        description: 2nd ICD (9 or 10) procedure code on the claim.
+        description: 2nd ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_3
-        description: 3rd ICD (9 or 10) procedure code on the claim.
+        description: 3rd ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_4
-        description: 4th ICD (9 or 10) procedure code on the claim.
+        description: 4th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_5
-        description: 5th ICD (9 or 10) procedure code on the claim.
+        description: 5th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_6
-        description: 6th ICD (9 or 10) procedure code on the claim.
+        description: 6th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_7
-        description: 7th ICD (9 or 10) procedure code on the claim.
+        description: 7th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_8
-        description: 8th ICD (9 or 10) procedure code on the claim.
+        description: 8th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_9
-        description: 9th ICD (9 or 10) procedure code on the claim.
+        description: 9th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_10
-        description: 10th ICD (9 or 10) procedure code on the claim.
+        description: 10th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_11
-        description: 11th ICD (9 or 10) procedure code on the claim.
+        description: 11th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_12
-        description: 12th ICD (9 or 10) procedure code on the claim.
+        description: 12th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_13
-        description: 13th ICD (9 or 10) procedure code on the claim.
+        description: 13th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_14
-        description: 14th ICD (9 or 10) procedure code on the claim.
+        description: 14th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_15
-        description: 15th ICD (9 or 10) procedure code on the claim.
+        description: 15th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_16
-        description: 16th ICD (9 or 10) procedure code on the claim.
+        description: 16th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_17
-        description: 17th ICD (9 or 10) procedure code on the claim.
+        description: 17th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_18
-        description: 18th ICD (9 or 10) procedure code on the claim.
+        description: 18th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_19
-        description: 19th ICD (9 or 10) procedure code on the claim.
+        description: 19th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_20
-        description: 20th ICD (9 or 10) procedure code on the claim.
+        description: 20th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_21
-        description: 21st ICD (9 or 10) procedure code on the claim.
+        description: 21st ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_22
-        description: 22nd ICD (9 or 10) procedure code on the claim.
+        description: 22nd ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_23
-        description: 23rd ICD (9 or 10) procedure code on the claim.
+        description: 23rd ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_24
-        description: 24th ICD (9 or 10) procedure code on the claim.
+        description: 24th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs
             terminology_note: "**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters."
       - name: procedure_code_25
-        description: 25th ICD (9 or 10) procedure code on the claim.
+        description: 25th ICD (9 or 10) procedure code on the claim, with decimal points and surrounding whitespace removed and converted to upper case.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/icd-10-pcs

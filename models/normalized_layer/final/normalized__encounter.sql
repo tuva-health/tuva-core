@@ -24,7 +24,10 @@
     , cast(admit_source.admit_source_description as {{ dbt.type_string() }}) as admit_source_description
     , cast(enc.admit_type_code as {{ dbt.type_string() }}) as admit_type_code
     , cast(admit_type.admit_type_description as {{ dbt.type_string() }}) as admit_type_description
-    , cast(enc.discharge_disposition_code as {{ dbt.type_string() }}) as discharge_disposition_code
+    , cast(coalesce(
+          discharge_disposition.discharge_disposition_code
+        , cast(enc.discharge_disposition_code as {{ dbt.type_string() }})
+      ) as {{ dbt.type_string() }}) as discharge_disposition_code
     , cast(discharge_disposition.discharge_disposition_description as {{ dbt.type_string() }}) as discharge_disposition_description
     , cast(enc.attending_provider_id as {{ dbt.type_string() }}) as attending_provider_id
     , cast(enc.attending_provider_name as {{ dbt.type_string() }}) as attending_provider_name
@@ -46,7 +49,11 @@
     , cast(enc.primary_diagnosis_code as {{ dbt.type_string() }}) as primary_diagnosis_code
     , cast(coalesce(icd10.long_description, icd9.long_description) as {{ dbt.type_string() }}) as primary_diagnosis_description
     , cast(enc.drg_code_type as {{ dbt.type_string() }}) as drg_code_type
-    , cast(enc.drg_code as {{ dbt.type_string() }}) as drg_code
+    , cast(coalesce(
+          msdrg.ms_drg_code
+        , aprdrg.apr_drg_code
+        , cast(enc.drg_code as {{ dbt.type_string() }})
+      ) as {{ dbt.type_string() }}) as drg_code
     , cast(coalesce(msdrg.ms_drg_description, aprdrg.apr_drg_description) as {{ dbt.type_string() }}) as drg_description
     , cast(enc.paid_amount as {{ dbt.type_numeric() }}) as paid_amount
     , cast(enc.allowed_amount as {{ dbt.type_numeric() }}) as allowed_amount
@@ -89,16 +96,16 @@ left outer join {{ ref('terminology__admit_source') }} as admit_source
 left outer join {{ ref('terminology__admit_type') }} as admit_type
     on cast(enc.admit_type_code as {{ dbt.type_string() }}) = admit_type.admit_type_code
 left outer join {{ ref('terminology__discharge_disposition') }} as discharge_disposition
-    on cast(enc.discharge_disposition_code as {{ dbt.type_string() }}) = discharge_disposition.discharge_disposition_code
+    on {{ the_tuva_project.zero_pad_code('cast(enc.discharge_disposition_code as ' ~ dbt.type_string() ~ ')', 2) }} = discharge_disposition.discharge_disposition_code
 left outer join {{ ref('terminology__icd_10_cm') }} as icd10
     on lower(cast(enc.primary_diagnosis_code_type as {{ dbt.type_string() }})) = 'icd-10-cm'
-    and replace(cast(enc.primary_diagnosis_code as {{ dbt.type_string() }}), '.', '') = replace(icd10.icd_10_cm, '.', '')
+    and {{ the_tuva_project.clean_terminology_code('cast(enc.primary_diagnosis_code as ' ~ dbt.type_string() ~ ')') }} = icd10.icd_10_cm
 left outer join {{ ref('terminology__icd_9_cm') }} as icd9
     on lower(cast(enc.primary_diagnosis_code_type as {{ dbt.type_string() }})) = 'icd-9-cm'
-    and replace(cast(enc.primary_diagnosis_code as {{ dbt.type_string() }}), '.', '') = replace(icd9.icd_9_cm, '.', '')
+    and {{ the_tuva_project.clean_terminology_code('cast(enc.primary_diagnosis_code as ' ~ dbt.type_string() ~ ')') }} = icd9.icd_9_cm
 left outer join {{ ref('terminology__ms_drg') }} as msdrg
     on lower(cast(enc.drg_code_type as {{ dbt.type_string() }})) = 'ms-drg'
-    and cast(enc.drg_code as {{ dbt.type_string() }}) = msdrg.ms_drg_code
+    and {{ the_tuva_project.zero_pad_code('cast(enc.drg_code as ' ~ dbt.type_string() ~ ')', 3) }} = msdrg.ms_drg_code
 left outer join {{ ref('terminology__apr_drg') }} as aprdrg
     on lower(cast(enc.drg_code_type as {{ dbt.type_string() }})) = 'apr-drg'
-    and cast(enc.drg_code as {{ dbt.type_string() }}) = aprdrg.apr_drg_code
+    and {{ the_tuva_project.zero_pad_code('cast(enc.drg_code as ' ~ dbt.type_string() ~ ')', 3) }} = aprdrg.apr_drg_code

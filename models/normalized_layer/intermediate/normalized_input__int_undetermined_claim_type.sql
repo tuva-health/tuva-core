@@ -106,31 +106,31 @@ select
     , diagnosis_poa_24
     , diagnosis_poa_25
     , procedure_code_type
-    , procedure_code_1
-    , procedure_code_2
-    , procedure_code_3
-    , procedure_code_4
-    , procedure_code_5
-    , procedure_code_6
-    , procedure_code_7
-    , procedure_code_8
-    , procedure_code_9
-    , procedure_code_10
-    , procedure_code_11
-    , procedure_code_12
-    , procedure_code_13
-    , procedure_code_14
-    , procedure_code_15
-    , procedure_code_16
-    , procedure_code_17
-    , procedure_code_18
-    , procedure_code_19
-    , procedure_code_20
-    , procedure_code_21
-    , procedure_code_22
-    , procedure_code_23
-    , procedure_code_24
-    , procedure_code_25
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_1') }} as procedure_code_1
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_2') }} as procedure_code_2
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_3') }} as procedure_code_3
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_4') }} as procedure_code_4
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_5') }} as procedure_code_5
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_6') }} as procedure_code_6
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_7') }} as procedure_code_7
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_8') }} as procedure_code_8
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_9') }} as procedure_code_9
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_10') }} as procedure_code_10
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_11') }} as procedure_code_11
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_12') }} as procedure_code_12
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_13') }} as procedure_code_13
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_14') }} as procedure_code_14
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_15') }} as procedure_code_15
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_16') }} as procedure_code_16
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_17') }} as procedure_code_17
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_18') }} as procedure_code_18
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_19') }} as procedure_code_19
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_20') }} as procedure_code_20
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_21') }} as procedure_code_21
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_22') }} as procedure_code_22
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_23') }} as procedure_code_23
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_24') }} as procedure_code_24
+    , {{ the_tuva_project.clean_terminology_code('procedure_code_25') }} as procedure_code_25
     , procedure_date_1
     , procedure_date_2
     , procedure_date_3
@@ -164,17 +164,17 @@ left outer join {{ ref('terminology__admit_source') }} as ad_src
 left outer join {{ ref('terminology__admit_type') }} as ad_type
     on med.admit_type_code = ad_type.admit_type_code
 left outer join {{ ref('terminology__discharge_disposition') }} as dis
-    on med.discharge_disposition_code = dis.discharge_disposition_code
+    on {{ the_tuva_project.zero_pad_code('med.discharge_disposition_code', 2) }} = dis.discharge_disposition_code
 left outer join {{ ref('terminology__place_of_service') }} as pos
     on med.place_of_service_code = pos.place_of_service_code
 left outer join {{ ref('terminology__bill_type') }} as tob
     on med.bill_type_code = tob.bill_type_code
 left outer join {{ ref('terminology__ms_drg') }} as msdrg
     on med.drg_code_type = 'ms-drg'
-    and med.drg_code = msdrg.ms_drg_code
+    and {{ the_tuva_project.zero_pad_code('med.drg_code', 3) }} = msdrg.ms_drg_code
 left outer join {{ ref('terminology__apr_drg') }} as aprdrg
     on med.drg_code_type = 'apr-drg'
-    and med.drg_code = aprdrg.apr_drg_code
+    and {{ the_tuva_project.zero_pad_code('med.drg_code', 3) }} = aprdrg.apr_drg_code
 left outer join {{ ref('terminology__revenue_center') }} as rev
     on med.revenue_center_code = rev.revenue_center_code
 left outer join {{ ref('provider_data__provider') }} as rendnpi

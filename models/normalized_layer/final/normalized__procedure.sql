@@ -63,13 +63,13 @@ select
 from {{ ref('input_layer__procedure') }} as procedure_source
 left join {{ ref('terminology__icd_10_pcs') }} as icd10
     on lower(procedure_source.code_system) = 'icd-10-pcs'
-        and procedure_source.source_code = icd10.icd_10_pcs
+        and {{ the_tuva_project.clean_terminology_code('procedure_source.source_code') }} = icd10.icd_10_pcs
 left join {{ ref('terminology__icd_9_pcs') }} as icd9
     on lower(procedure_source.code_system) = 'icd-9-pcs'
-        and replace(procedure_source.source_code, '.', '') = icd9.icd_9_pcs
+        and {{ the_tuva_project.clean_terminology_code('procedure_source.source_code') }} = icd9.icd_9_pcs
 left join {{ ref('terminology__hcpcs_level_2') }} as hcpcs
     on lower(procedure_source.code_system) = 'hcpcs'
-        and procedure_source.source_code = hcpcs.hcpcs
+        and {{ the_tuva_project.clean_terminology_code('procedure_source.source_code') }} = hcpcs.hcpcs
 left join {{ ref('terminology__snomed_ct') }} as snomed_ct
     on lower(procedure_source.code_system) = 'snomed-ct'
         and procedure_source.source_code = snomed_ct.snomed_ct

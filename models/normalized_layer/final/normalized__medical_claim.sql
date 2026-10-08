@@ -66,7 +66,7 @@ select
     , cast(med.total_cost_amount as {{ dbt.type_numeric() }}) as total_cost_amount
     , cast(med.diagnosis_code_type as {{ dbt.type_string() }}) as diagnosis_code_type
     {% for i in index_cols %}
-    , cast(replace(med.diagnosis_code_{{ i }}, '.', '') as {{ dbt.type_string() }}) as diagnosis_code_{{ i }}
+    , cast({{ the_tuva_project.clean_terminology_code('med.diagnosis_code_' ~ i) }} as {{ dbt.type_string() }}) as diagnosis_code_{{ i }}
     {% endfor %}
     {% for i in index_cols %}
     , cast(med.diagnosis_poa_{{ i }} as {{ dbt.type_string() }}) as diagnosis_poa_{{ i }}

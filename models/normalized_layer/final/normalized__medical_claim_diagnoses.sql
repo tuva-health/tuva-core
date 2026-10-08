@@ -53,7 +53,7 @@ with line_level_diagnoses as (
         , diag.raw_code_system
         , diag.condition_rank
         , diag.diagnosis_column
-        , replace(diag.source_code, '.', '') as source_code
+        , {{ the_tuva_project.clean_terminology_code('diag.source_code') }} as source_code
         , diag.present_on_admit_code
         , case
             when lower(diag.raw_code_system) = 'icd-9-cm'
@@ -88,9 +88,9 @@ with line_level_diagnoses as (
         , diag.data_source
     from line_level_diagnoses as diag
     left join {{ ref('terminology__icd_10_cm') }} as icd10
-        on replace(diag.source_code, '.', '') = icd10.icd_10_cm
+        on {{ the_tuva_project.clean_terminology_code('diag.source_code') }} = icd10.icd_10_cm
     left join {{ ref('terminology__icd_9_cm') }} as icd9
-        on replace(diag.source_code, '.', '') = icd9.icd_9_cm
+        on {{ the_tuva_project.clean_terminology_code('diag.source_code') }} = icd9.icd_9_cm
     left join {{ ref('terminology__present_on_admission') }} as poa
         on diag.present_on_admit_code = poa.present_on_admit_code
 )

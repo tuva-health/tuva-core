@@ -199,7 +199,8 @@ models:
           meta:
             data_type: varchar
       - name: source_code
-        description: Diagnosis code from the source claim after removing decimal formatting.
+        description: Diagnosis code from the source claim after removing decimal
+          points and surrounding whitespace and converting to upper case.
         config:
           meta:
             data_type: varchar
@@ -287,7 +288,9 @@ models:
           meta:
             data_type: varchar
       - name: source_code
-        description: Procedure code from the source claim.
+        description: Procedure code from the source claim. Header ICD procedure codes
+          have decimal points and surrounding whitespace removed and are converted
+          to upper case; HCPCS codes are passed through as supplied.
         config:
           meta:
             data_type: varchar
@@ -470,7 +473,8 @@ models:
       - name: source_code
         description: Condition code supplied by the source. For claims-derived rows,
           this comes from the unpivoted diagnosis code fields in
-          input_layer.medical_claim with decimal points removed. For clinical
+          input_layer.medical_claim with decimal points and surrounding
+          whitespace removed and converted to upper case. For clinical
           rows, this is preserved from input_layer.condition.source_code.
           Codes are retained even when no terminology match exists.
         config:
@@ -957,7 +961,10 @@ models:
             data_type: varchar
       - name: discharge_disposition_code
         description: Code indicating the patient's disposition at discharge, such as
-          home, expired, or transferred to another care setting.
+          home, expired, or transferred to another care setting. Returned as the
+          two-digit Tuva terminology code when the source code matches after
+          zero-padding. On clinical encounters, an unmatched code keeps its source
+          value.
         config:
           meta:
             terminology: https://thetuvaproject.com/terminology/discharge-disposition
@@ -1095,7 +1102,10 @@ models:
             data_type: varchar
       - name: drg_code
         description: Diagnosis-related group code assigned to the encounter, when
-          available. This is most relevant for inpatient encounters.
+          available. This is most relevant for inpatient encounters. Returned as the
+          three-digit Tuva terminology code when the source code matches after
+          zero-padding. On clinical encounters, an unmatched code keeps its source
+          value.
         config:
           meta:
             data_type: varchar
@@ -3510,7 +3520,9 @@ models:
         description: Procedure code from the source data before Tuva normalization. For
           claims-derived HCPCS rows, this is populated from
           input_layer.medical_claim.hcpcs_code. For claims-derived header procedure
-          rows, this is populated from procedure_code_1 through procedure_code_25. For
+          rows, this is populated from procedure_code_1 through procedure_code_25
+          with decimal points and surrounding whitespace removed and converted to
+          upper case. For
           clinical rows, this is populated from input_layer.procedure.source_code.
         config:
           meta:

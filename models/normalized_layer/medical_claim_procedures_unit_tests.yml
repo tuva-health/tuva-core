@@ -1,0 +1,107 @@
+version: 2
+
+unit_tests:
+  - name: test_normalized_medical_claim_procedures_ignore_code_case_and_whitespace
+    description: >-
+      Proves that HCPCS, ICD-10-PCS, and ICD-9-PCS procedure codes differing
+      from terminology only in case, surrounding whitespace, or decimal
+      placement still normalize, that source_code passes through unchanged,
+      and that a code absent from terminology after cleaning keeps a null
+      normalized_code.
+    model: normalized__medical_claim_procedures
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        _medical_claim_procedure_cols_override: [1]
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized__medical_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set lines = [
+              ('claim_1', 1, "' j1100 '", 'icd-10-pcs', ' 0dtj4zz'),
+              ('claim_1', 2, "'zzzzz'", 'icd-10-pcs', ' 0dtj4zz'),
+              ('claim_2', 1, 'cast(null as ' ~ string_type ~ ')', 'icd-9-pcs', '45.13 ')
+          ] %}
+          {% for claim_id, line_number, hcpcs_code, procedure_code_type, procedure_code in lines %}
+          select
+              '{{ claim_id }}' as claim_id
+            , {{ line_number }} as claim_line_number
+            , 'person' as person_id
+            , 'member' as member_id
+            , cast('2024-01-01' as date) as claim_line_start_date
+            , cast('2024-01-01' as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast(null as date) as discharge_date
+            , cast('2024-01-01' as date) as claim_end_date
+            , {{ hcpcs_code }} as hcpcs_code
+            , '1234567890' as rendering_npi
+            , cast(null as {{ string_type }}) as hcpcs_modifier_1
+            , cast(null as {{ string_type }}) as hcpcs_modifier_2
+            , cast(null as {{ string_type }}) as hcpcs_modifier_3
+            , cast(null as {{ string_type }}) as hcpcs_modifier_4
+            , cast(null as {{ string_type }}) as hcpcs_modifier_5
+            , '{{ procedure_code_type }}' as procedure_code_type
+            , '{{ procedure_code }}' as procedure_code_1
+            , cast('2024-01-02' as date) as procedure_date_1
+            , cast(null as {{ timestamp_type }}) as ingest_datetime
+            , 'source' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('terminology__icd_10_pcs')
+        format: sql
+        rows: |
+          select '0DTJ4ZZ' as icd_10_pcs, 'Resection of Appendix, Percutaneous Endoscopic Approach' as description
+      - input: ref('terminology__icd_9_pcs')
+        format: sql
+        rows: |
+          select '4513' as icd_9_pcs, 'Sm bowel endoscopy NEC' as short_description
+      - input: ref('terminology__hcpcs_level_2')
+        format: sql
+        rows: |
+          select 'J1100' as hcpcs, 'Dexamethasone sodium phos' as short_description
+      - input: ref('terminology__snomed_ct')
+        format: sql
+        rows: |
+          select '__unused__' as snomed_ct, '__unused__' as description from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+    expect:
+      rows:
+        - {claim_id: claim_1, claim_line_number: 1, code_system: hcpcs, source_code: ' j1100 ', normalized_code: J1100, normalized_description: Dexamethasone sodium phos}
+        - {claim_id: claim_1, claim_line_number: 2, code_system: hcpcs, source_code: zzzzz, normalized_code: null, normalized_description: null}
+        - {claim_id: claim_1, claim_line_number: null, code_system: icd-10-pcs, source_code: ' 0dtj4zz', normalized_code: 0DTJ4ZZ, normalized_description: 'Resection of Appendix, Percutaneous Endoscopic Approach'}
+        - {claim_id: claim_2, claim_line_number: null, code_system: icd-9-pcs, source_code: '45.13 ', normalized_code: '4513', normalized_description: Sm bowel endoscopy NEC}
+
+  - name: test_procedure_code_intermediate_cleans_header_procedure_codes
+    description: >-
+      Proves that institutional header procedure codes are cleaned of case,
+      surrounding whitespace, and decimal points before they become the
+      voted procedure_code_N values on the normalized medical claim.
+    model: normalized_input__int_procedure_code_intermediate
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized_input__stg_medical_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set codes = [' 0dtj4zz', '45.13 '] %}
+          select
+              'claim-1' as claim_id
+            , 'institutional' as claim_type
+            , 'source' as data_source
+            , 'icd-10-pcs' as procedure_code_type
+            {% for i in range(1, 26) %}
+            , {% if i <= codes | length %}'{{ codes[i - 1] }}'{% else %}cast(null as {{ string_type }}){% endif %} as procedure_code_{{ i }}
+            {% endfor %}
+    expect:
+      rows:
+        - {claim_id: claim-1, column_name: procedure_code_1, procedure_code: 0DTJ4ZZ}
+        - {claim_id: claim-1, column_name: procedure_code_2, procedure_code: '4513'}

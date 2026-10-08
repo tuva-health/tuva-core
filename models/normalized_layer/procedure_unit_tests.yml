@@ -74,3 +74,75 @@ unit_tests:
         - procedure_id: 699c699c53bc5e8b2cd73ad65e1fe2ac
           person_id: person-2
           data_source: a
+
+  - name: test_normalized_procedure_ignores_code_case_and_whitespace
+    description: >-
+      Proves that clinical HCPCS, ICD-10-PCS, and ICD-9-PCS procedure codes
+      differing from terminology only in case, surrounding whitespace, or
+      decimal placement still normalize, that source_code keeps the raw source
+      value, and that a code absent from terminology after cleaning keeps a
+      null normalized_code.
+    model: normalized__procedure
+    config:
+      enabled: "{{ var('clinical_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        clinical_enabled: true
+        _extension_columns_override: []
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('input_layer__procedure')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set procedures = [
+              ('p1', 'hcpcs', ' j1100'),
+              ('p2', 'icd-10-pcs', '0dtj4zz '),
+              ('p3', 'icd-9-pcs', ' 45.13'),
+              ('p4', 'hcpcs', 'zzzzz')
+          ] %}
+          {% for procedure_id, code_system, source_code in procedures %}
+          select
+                '{{ procedure_id }}' as source_procedure_id
+              , 'person-1' as person_id
+              , 'patient-1' as patient_id
+              , cast(null as {{ string_type }}) as encounter_id
+              , cast('2024-01-01' as date) as procedure_date
+              , '{{ code_system }}' as code_system
+              , '{{ source_code }}' as source_code
+              , cast(null as {{ string_type }}) as source_description
+              , cast(null as {{ string_type }}) as modifier_1
+              , cast(null as {{ string_type }}) as modifier_2
+              , cast(null as {{ string_type }}) as modifier_3
+              , cast(null as {{ string_type }}) as modifier_4
+              , cast(null as {{ string_type }}) as modifier_5
+              , cast(null as {{ string_type }}) as practitioner_id
+              , cast(null as {{ timestamp_type }}) as ingest_datetime
+              , 'source-a' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('terminology__icd_10_pcs')
+        format: sql
+        rows: |
+          select '0DTJ4ZZ' as icd_10_pcs, 'Resection of Appendix, Percutaneous Endoscopic Approach' as description
+      - input: ref('terminology__icd_9_pcs')
+        format: sql
+        rows: |
+          select '4513' as icd_9_pcs, 'Sm bowel endoscopy NEC' as short_description
+      - input: ref('terminology__hcpcs_level_2')
+        format: sql
+        rows: |
+          select 'J1100' as hcpcs, 'Dexamethasone sodium phos' as short_description
+      - input: ref('terminology__snomed_ct')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select cast(null as {{ string_type }}) as snomed_ct, cast(null as {{ string_type }}) as description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+    expect:
+      rows:
+        - {code_system: hcpcs, source_code: ' j1100', normalized_code: J1100, normalized_description: Dexamethasone sodium phos}
+        - {code_system: icd-10-pcs, source_code: '0dtj4zz ', normalized_code: 0DTJ4ZZ, normalized_description: 'Resection of Appendix, Percutaneous Endoscopic Approach'}
+        - {code_system: icd-9-pcs, source_code: ' 45.13', normalized_code: '4513', normalized_description: Sm bowel endoscopy NEC}
+        - {code_system: hcpcs, source_code: zzzzz, normalized_code: null, normalized_description: null}

@@ -28,7 +28,7 @@ select distinct
     , data_source
     , procedure_code_type
     , column_name
-    , replace(piv.procedure_code, '.', '') as procedure_code
+    , {{ the_tuva_project.clean_terminology_code('piv.procedure_code') }} as procedure_code
     , cast('{{ var('tuva_last_run') }}' as {{ dbt.type_timestamp() }}) as tuva_last_run
 from pivot_procedure as piv
 where claim_type = 'institutional'

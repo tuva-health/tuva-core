@@ -98,19 +98,19 @@ select
 from obs
 left join {{ ref('terminology__icd_10_cm') }} as icd10cm
     on lower(obs.source_code_type) = 'icd-10-cm'
-        and replace(obs.source_code, '.', '') = icd10cm.icd_10_cm
+        and {{ the_tuva_project.clean_terminology_code('obs.source_code') }} = icd10cm.icd_10_cm
 left join {{ ref('terminology__icd_9_cm') }} as icd9cm
     on lower(obs.source_code_type) = 'icd-9-cm'
-        and replace(obs.source_code, '.', '') = icd9cm.icd_9_cm
+        and {{ the_tuva_project.clean_terminology_code('obs.source_code') }} = icd9cm.icd_9_cm
 left join {{ ref('terminology__icd_10_pcs') }} as icd10pcs
     on lower(obs.source_code_type) = 'icd-10-pcs'
-        and obs.source_code = icd10pcs.icd_10_pcs
+        and {{ the_tuva_project.clean_terminology_code('obs.source_code') }} = icd10pcs.icd_10_pcs
 left join {{ ref('terminology__icd_9_pcs') }} as icd9pcs
     on lower(obs.source_code_type) = 'icd-9-pcs'
-        and replace(obs.source_code, '.', '') = icd9pcs.icd_9_pcs
+        and {{ the_tuva_project.clean_terminology_code('obs.source_code') }} = icd9pcs.icd_9_pcs
 left join {{ ref('terminology__hcpcs_level_2') }} as hcpcs
     on lower(obs.source_code_type) = 'hcpcs'
-        and obs.source_code = hcpcs.hcpcs
+        and {{ the_tuva_project.clean_terminology_code('obs.source_code') }} = hcpcs.hcpcs
 left join {{ ref('terminology__snomed_ct') }} as snomed_ct
     on lower(obs.source_code_type) = 'snomed-ct'
         and obs.source_code = snomed_ct.snomed_ct

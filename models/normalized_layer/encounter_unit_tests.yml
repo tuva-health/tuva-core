@@ -171,3 +171,126 @@ unit_tests:
           encounter_group: null
           length_of_stay: 1
           data_source: source-ehr
+
+  - name: test_normalized_encounter_matches_padded_and_cleaned_codes
+    description: >-
+      Proves that clinical encounter terminology lookups tolerate source
+      formatting. Primary diagnosis codes match ICD terminology regardless of
+      case, surrounding whitespace, or decimal placement. DRG and discharge
+      disposition codes are zero-padded to the three- and two-digit terminology
+      widths, while a longer code is never truncated into a false match. A
+      matched DRG or discharge disposition outputs the terminology code, as the
+      claims path does, and an unmatched one keeps its raw value. The primary
+      diagnosis code keeps its raw value.
+    model: normalized__encounter
+    config:
+      enabled: "{{ var('clinical_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        _extension_columns_override: []
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('input_layer__encounter')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set numeric_type = 'numeric' if target.type == 'bigquery' else 'decimal(18, 2)' %}
+          {% set encounters = [
+              ('enc-1', '1', 'icd-10-cm', ' i21.4', 'ms-drg', '65'),
+              ('enc-2', ' 6 ', 'icd-9-cm', 'v70.0 ', 'apr-drg', ' 4'),
+              ('enc-3', '06', 'icd-10-cm', 'zzz999', 'ms-drg', '0470')
+          ] %}
+          {% for encounter_id, discharge_code, dx_type, dx_code, drg_type, drg_code in encounters %}
+          select
+              '{{ encounter_id }}' as encounter_id
+            , 'person-1' as person_id
+            , 'patient-1' as patient_id
+            , 'acute inpatient' as encounter_type
+            , cast('2024-01-01' as date) as encounter_start_date
+            , cast('2024-01-03' as date) as encounter_end_date
+            , cast(null as {{ string_type }}) as admit_source_code
+            , cast(null as {{ string_type }}) as admit_type_code
+            , '{{ discharge_code }}' as discharge_disposition_code
+            , cast(null as {{ string_type }}) as attending_provider_id
+            , cast(null as {{ string_type }}) as attending_provider_name
+            , cast(null as {{ string_type }}) as facility_npi
+            , cast(null as {{ string_type }}) as facility_name
+            , '{{ dx_type }}' as primary_diagnosis_code_type
+            , '{{ dx_code }}' as primary_diagnosis_code
+            , '{{ drg_type }}' as drg_code_type
+            , '{{ drg_code }}' as drg_code
+            , cast(null as {{ numeric_type }}) as paid_amount
+            , cast(null as {{ numeric_type }}) as allowed_amount
+            , cast(null as {{ numeric_type }}) as charge_amount
+            , cast(null as {{ timestamp_type }}) as ingest_datetime
+            , 'source-ehr' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('terminology__encounter_type')
+        format: sql
+        rows: |
+          select 'acute inpatient' as encounter_type, 'inpatient' as encounter_group
+      - input: ref('terminology__admit_source')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as admit_source_code
+            , cast(null as {{ string_type }}) as admit_source_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('terminology__admit_type')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as admit_type_code
+            , cast(null as {{ string_type }}) as admit_type_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('terminology__discharge_disposition')
+        format: sql
+        rows: |
+          select '01' as discharge_disposition_code, 'Discharged to home/self-care (routine charge)' as discharge_disposition_description
+          union all
+          select '06', 'Discharged/transferred to home under care of organized home health service organization'
+      - input: ref('terminology__icd_10_cm')
+        format: sql
+        rows: |
+          select 'I214' as icd_10_cm, 'Non-ST elevation (NSTEMI) myocardial infarction' as long_description
+      - input: ref('terminology__icd_9_cm')
+        format: sql
+        rows: |
+          select 'V700' as icd_9_cm, 'Routine general medical examination at a health care facility' as long_description
+      - input: ref('terminology__ms_drg')
+        format: sql
+        rows: |
+          select '065' as ms_drg_code, 'Intracranial Hemorrhage or Cerebral Infarction with CC or TPA in 24 Hours' as ms_drg_description
+          union all
+          select '047', 'Transient Ischemia without Thrombolytic'
+      - input: ref('terminology__apr_drg')
+        format: sql
+        rows: |
+          select '004' as apr_drg_code, 'TRACHEOSTOMY WITH MV >96 HOURS WITH EXTENSIVE PROCEDURE' as apr_drg_description
+    expect:
+      rows:
+        - encounter_id: enc-1
+          discharge_disposition_code: '01'
+          discharge_disposition_description: Discharged to home/self-care (routine charge)
+          primary_diagnosis_code: ' i21.4'
+          primary_diagnosis_description: Non-ST elevation (NSTEMI) myocardial infarction
+          drg_code: '065'
+          drg_description: Intracranial Hemorrhage or Cerebral Infarction with CC or TPA in 24 Hours
+        - encounter_id: enc-2
+          discharge_disposition_code: '06'
+          discharge_disposition_description: Discharged/transferred to home under care of organized home health service organization
+          primary_diagnosis_code: 'v70.0 '
+          primary_diagnosis_description: Routine general medical examination at a health care facility
+          drg_code: '004'
+          drg_description: TRACHEOSTOMY WITH MV >96 HOURS WITH EXTENSIVE PROCEDURE
+        - encounter_id: enc-3
+          discharge_disposition_code: '06'
+          discharge_disposition_description: Discharged/transferred to home under care of organized home health service organization
+          primary_diagnosis_code: zzz999
+          primary_diagnosis_description: null
+          drg_code: '0470'
+          drg_description: null

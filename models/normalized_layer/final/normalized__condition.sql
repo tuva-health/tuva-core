@@ -63,10 +63,10 @@ select
 from {{ ref('input_layer__condition') }} as cond
 left join {{ ref('terminology__icd_10_cm') }} as icd10
     on lower(cond.code_system) = 'icd-10-cm'
-        and replace(cond.source_code, '.', '') = icd10.icd_10_cm
+        and {{ the_tuva_project.clean_terminology_code('cond.source_code') }} = icd10.icd_10_cm
 left join {{ ref('terminology__icd_9_cm') }} as icd9
     on lower(cond.code_system) = 'icd-9-cm'
-        and replace(cond.source_code, '.', '') = icd9.icd_9_cm
+        and {{ the_tuva_project.clean_terminology_code('cond.source_code') }} = icd9.icd_9_cm
 left join {{ ref('terminology__snomed_ct') }} as snomed_ct
     on lower(cond.code_system) = 'snomed-ct'
         and cond.source_code = snomed_ct.snomed_ct

@@ -1,0 +1,97 @@
+version: 2
+
+unit_tests:
+  - name: test_normalized_observation_ignores_icd_and_hcpcs_code_case_and_whitespace
+    description: >-
+      Proves that observation ICD-10-CM, ICD-9-CM, ICD-10-PCS, ICD-9-PCS, and
+      HCPCS codes differing from terminology only in case, surrounding
+      whitespace, or decimal placement still normalize, that source_code keeps
+      the raw source value, and that a code absent from terminology after
+      cleaning keeps a null normalized_code.
+    model: normalized__observation
+    config:
+      enabled: "{{ var('clinical_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        clinical_enabled: true
+        _extension_columns_override: []
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('input_layer__observation')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set observations = [
+              ('o1', 'icd-10-cm', ' i21.4'),
+              ('o2', 'icd-9-cm', 'v70.0 '),
+              ('o3', 'icd-10-pcs', ' 0dtj4zz '),
+              ('o4', 'icd-9-pcs', '45.13 '),
+              ('o5', 'hcpcs', 'j1100 '),
+              ('o6', 'icd-10-cm', 'zzz999')
+          ] %}
+          {% for observation_id, source_code_type, source_code in observations %}
+          select
+              '{{ observation_id }}' as observation_id
+            , 'p1' as person_id
+            , 'a1' as patient_id
+            , cast(null as {{ string_type }}) as encounter_id
+            , cast(null as {{ string_type }}) as panel_id
+            , cast('2020-01-01' as date) as observation_date
+            , cast(null as {{ string_type }}) as observation_type
+            , '{{ source_code_type }}' as source_code_type
+            , '{{ source_code }}' as source_code
+            , cast(null as {{ string_type }}) as source_description
+            , cast(null as {{ string_type }}) as result
+            , cast(null as {{ string_type }}) as source_units
+            , cast(null as {{ string_type }}) as normalized_units
+            , cast(null as {{ string_type }}) as source_reference_range_low
+            , cast(null as {{ string_type }}) as source_reference_range_high
+            , cast(null as {{ string_type }}) as normalized_reference_range_low
+            , cast(null as {{ string_type }}) as normalized_reference_range_high
+            , cast(null as {{ timestamp_type }}) as ingest_datetime
+            , 'source' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('terminology__icd_10_cm')
+        format: sql
+        rows: |
+          select 'I214' as icd_10_cm, 'NSTEMI myocardial infarction' as short_description
+      - input: ref('terminology__icd_9_cm')
+        format: sql
+        rows: |
+          select 'V700' as icd_9_cm, 'Routine medical exam' as short_description
+      - input: ref('terminology__icd_10_pcs')
+        format: sql
+        rows: |
+          select '0DTJ4ZZ' as icd_10_pcs, 'Resection of Appendix, Percutaneous Endoscopic Approach' as description
+      - input: ref('terminology__icd_9_pcs')
+        format: sql
+        rows: |
+          select '4513' as icd_9_pcs, 'Sm bowel endoscopy NEC' as short_description
+      - input: ref('terminology__hcpcs_level_2')
+        format: sql
+        rows: |
+          select 'J1100' as hcpcs, 'Dexamethasone sodium phos' as short_description
+      - input: ref('terminology__snomed_ct')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select '__no_match__' as snomed_ct, cast(null as {{ string_type }}) as description from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('terminology__loinc')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select '__no_match__' as loinc, cast(null as {{ string_type }}) as long_common_name from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('terminology__observation_type')
+        format: sql
+        rows: |
+          select '__no_match__' as observation_type from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+    expect:
+      rows:
+        - {observation_id: o1, source_code: ' i21.4', normalized_code_type: icd-10-cm, normalized_code: I214, normalized_description: NSTEMI myocardial infarction}
+        - {observation_id: o2, source_code: 'v70.0 ', normalized_code_type: icd-9-cm, normalized_code: V700, normalized_description: Routine medical exam}
+        - {observation_id: o3, source_code: ' 0dtj4zz ', normalized_code_type: icd-10-pcs, normalized_code: 0DTJ4ZZ, normalized_description: 'Resection of Appendix, Percutaneous Endoscopic Approach'}
+        - {observation_id: o4, source_code: '45.13 ', normalized_code_type: icd-9-pcs, normalized_code: '4513', normalized_description: Sm bowel endoscopy NEC}
+        - {observation_id: o5, source_code: 'j1100 ', normalized_code_type: hcpcs, normalized_code: J1100, normalized_description: Dexamethasone sodium phos}
+        - {observation_id: o6, source_code: zzz999, normalized_code_type: null, normalized_code: null, normalized_description: null}

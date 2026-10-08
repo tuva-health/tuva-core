@@ -12,7 +12,7 @@ with normalize_cte as (
         , disch.discharge_disposition_description
     from {{ ref('normalized_input__stg_medical_claim') }} as med
     inner join {{ ref('terminology__discharge_disposition') }} as disch
-        on med.discharge_disposition_code = disch.discharge_disposition_code
+        on {{ the_tuva_project.zero_pad_code('med.discharge_disposition_code', 2) }} = disch.discharge_disposition_code
     where claim_type = 'institutional'
 )
 

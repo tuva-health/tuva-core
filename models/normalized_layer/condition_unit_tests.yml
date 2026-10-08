@@ -99,3 +99,77 @@ unit_tests:
           normalized_code: A001
           normalized_description: Canonical long ICD-10 description
           condition_rank: 2
+
+  - name: test_normalized_condition_ignores_code_case_and_whitespace
+    description: >-
+      Proves that clinical ICD diagnosis codes differing from terminology only
+      in case, surrounding whitespace, or decimal placement still normalize,
+      that source_code keeps the raw source value, and that a code absent from
+      terminology after cleaning keeps a null normalized_code.
+    model: normalized__condition
+    config:
+      enabled: "{{ var('clinical_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        _extension_columns_override: []
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('input_layer__condition')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set conditions = [
+              ('c1', 'icd-10-cm', ' a00.1 '),
+              ('c2', 'icd-10-cm', 'zzz999'),
+              ('c3', 'icd-9-cm', 'v70.0 ')
+          ] %}
+          {% for condition_id, code_system, source_code in conditions %}
+          select
+              '{{ condition_id }}' as source_condition_id
+            , 'person-1' as person_id
+            , 'patient-1' as patient_id
+            , cast(null as {{ string_type }}) as encounter_id
+            , cast('2024-01-01' as date) as recorded_date
+            , cast('2024-01-01' as date) as onset_date
+            , cast(null as date) as resolved_date
+            , 'active' as status
+            , 'problem' as condition_type
+            , '{{ code_system }}' as code_system
+            , '{{ source_code }}' as source_code
+            , cast(null as {{ string_type }}) as source_description
+            , 1 as condition_rank
+            , cast(null as {{ string_type }}) as present_on_admit_code
+            , cast(null as {{ timestamp_type }}) as ingest_datetime
+            , 'source-a' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('terminology__icd_10_cm')
+        format: sql
+        rows: |
+          select 'A001' as icd_10_cm, 'Cholera due to Vibrio cholerae 01, biovar eltor' as long_description
+      - input: ref('terminology__icd_9_cm')
+        format: sql
+        rows: |
+          select 'V700' as icd_9_cm, 'Routine general medical examination at a health care facility' as long_description
+      - input: ref('terminology__snomed_ct')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as snomed_ct
+            , cast(null as {{ string_type }}) as description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('terminology__present_on_admission')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as present_on_admit_code
+            , cast(null as {{ string_type }}) as present_on_admit_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+    expect:
+      rows:
+        - {source_condition_id: c1, code_system: icd-10-cm, source_code: ' a00.1 ', normalized_code: A001, normalized_description: 'Cholera due to Vibrio cholerae 01, biovar eltor'}
+        - {source_condition_id: c2, code_system: icd-10-cm, source_code: zzz999, normalized_code: null, normalized_description: null}
+        - {source_condition_id: c3, code_system: icd-9-cm, source_code: 'v70.0 ', normalized_code: V700, normalized_description: Routine general medical examination at a health care facility}
