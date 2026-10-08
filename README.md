@@ -237,3 +237,5 @@ through `TUVA_CORE_PATH`.
 ## License
 
 Tuva Core is released under the [Apache 2.0 License](LICENSE).
+
+<!-- No-op comment used only to open a pull request that triggers Snowflake CI. -->
