@@ -47,6 +47,7 @@ cast(
     , phone
     , email
     , ethnicity
+    , {{ standardize_race_ethnicity('race', 'ethnicity') }} as race_ethnicity
 {%- endset -%}
 
 {%- set final_metadata_columns -%}
