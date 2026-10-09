@@ -405,6 +405,13 @@ would erase the case contract the checks exist to enforce.
   Quality and its optional failure-key relation, and keeps
   parity disabled. A package-version change does not alter this automatic path.
   The Snowflake status is informational and is not required for merge.
+- Snowflake CI uses key-pair authentication. The workflows read
+  `DBT_SNOWFLAKE_CI_ACCOUNT`, `DBT_SNOWFLAKE_CI_USER`, `DBT_SNOWFLAKE_CI_ROLE`,
+  `DBT_SNOWFLAKE_CI_WAREHOUSE`, `DBT_SNOWFLAKE_CI_DATABASE`,
+  `DBT_SNOWFLAKE_CI_SCHEMA`, and `DBT_SNOWFLAKE_CI_PRIVATE_KEY`. The private
+  key secret is an unencrypted PKCS8 PEM. The Snowflake job writes that PEM
+  to a temporary file and sets `private_key_path` on the CI profile. Do not
+  reintroduce `DBT_SNOWFLAKE_CI_PASSWORD`.
 - Run `Tuva CI -- All Warehouses` manually for the final release PR. Its only
   input is the pull-request number. It accepts any open, mergeable,
   same-repository PR into `main`; CI does not inspect or compare package

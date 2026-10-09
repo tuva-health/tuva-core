@@ -9,5 +9,5 @@
         role: "{{ env_var('DBT_SNOWFLAKE_CI_ROLE') }}"
         schema: "{{ env_var('DBT_SNOWFLAKE_CI_SCHEMA') }}_{{ env_var('TUVA_CI_SCHEMA_PREFIX') }}"
         user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
-        password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
+        private_key_path: "{{ env_var('DBT_SNOWFLAKE_CI_PRIVATE_KEY_PATH') }}"
         threads: 5

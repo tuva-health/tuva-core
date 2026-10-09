@@ -87,6 +87,12 @@ so the complete Core test surface runs. A package version change does not
 change this automatic path. The Snowflake status is informational and is not
 required for merge.
 
+Snowflake authentication is key pair. The CI profile reads the account, user,
+role, warehouse, database, and schema from the existing `DBT_SNOWFLAKE_CI_*`
+secrets, and reads the unencrypted PKCS8 PEM from
+`DBT_SNOWFLAKE_CI_PRIVATE_KEY`. The workflow writes that PEM to a temporary
+file before dbt runs. `DBT_SNOWFLAKE_CI_PASSWORD` is not used.
+
 For the final release pull request, dispatch `Tuva CI -- All Warehouses` from
 the Actions tab and enter only its pull-request number. The workflow accepts an
 open, mergeable, same-repository pull request into `main`. It does not inspect
