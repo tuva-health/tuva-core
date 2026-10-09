@@ -1,0 +1,106 @@
+version: 2
+
+unit_tests:
+  - name: test_flag_claims_with_enrollment_uses_selected_claim_date_contract
+    description: >-
+      Claims enrollment must assign each claim line to the same month that
+      Core cost reporting uses, through the shared selected-claim-date
+      contract. Covers the cross-month line-start case from #1140 (a February
+      line start with a January claim start enrolls in February, matching
+      where its spend is now reported), the admission-date fallback, and
+      end-date-only sources, which previously received no enrollment
+      treatment at all and are now assigned to their claim end month.
+    model: claims_enrollment__flag_claims_with_enrollment
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-02-01 00:00:00'
+    given:
+      - input: ref('normalized__medical_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'claim-cross-month' as claim_id
+            , 1 as claim_line_number
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast('2024-02-02' as date) as claim_line_start_date
+            , cast('2024-01-31' as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast('2024-02-03' as date) as claim_end_date
+          union all
+          select
+              'claim-admission-fallback' as claim_id
+            , 1 as claim_line_number
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast(null as date) as claim_line_start_date
+            , cast(null as date) as claim_start_date
+            , cast('2024-04-10' as date) as admission_date
+            , cast(null as date) as claim_end_date
+          union all
+          select
+              'claim-end-date-only' as claim_id
+            , 1 as claim_line_number
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast(null as date) as claim_line_start_date
+            , cast(null as date) as claim_start_date
+            , cast(null as date) as admission_date
+            , cast('2024-03-15' as date) as claim_end_date
+      - input: ref('member_month__member_month')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'member-month-feb' as member_month_id
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , '202402' as year_month
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+          union all
+          select
+              'member-month-apr' as member_month_id
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , '202404' as year_month
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+          union all
+          select
+              'member-month-mar' as member_month_id
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , '202403' as year_month
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+    expect:
+      rows:
+        - claim_id: claim-cross-month
+          member_month_id: member-month-feb
+          inferred_claim_start_year_month: '202402'
+          inferred_claim_start_column_used: claim_line_start_date
+        - claim_id: claim-admission-fallback
+          member_month_id: member-month-apr
+          inferred_claim_start_year_month: '202404'
+          inferred_claim_start_column_used: admission_date
+        - claim_id: claim-end-date-only
+          member_month_id: member-month-mar
+          inferred_claim_start_year_month: '202403'
+          inferred_claim_start_column_used: claim_end_date

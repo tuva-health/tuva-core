@@ -33,7 +33,8 @@ models:
       - name: inferred_claim_start_year_month
         description: |
           The claim start date year and month.  If claim line start date is missing then the following column will be used, 
-          in the following order if also NULL:  claim start date, admission date
+          in the following order if also NULL:  claim start date, admission date, claim end date.  Claim end date is the
+          final fallback so end-date-only sources (e.g. CMS LDS) still receive enrollment treatment.
       - name: inferred_claim_end_year_month
         description: |
           The claim end date year and month.  If claim line end date is missing then the following column will be used, 

@@ -11,7 +11,7 @@ with claims_with_service_categories as (
     , {{ quote_column('plan') }}
     , service_category_1
     , service_category_2
-    , coalesce(claim_start_date, claim_end_date) as claim_date
+    , {{ selected_claim_date('claim_line_start_date', 'claim_start_date', 'admission_date', 'claim_end_date') }} as claim_date
     , paid_amount
     , allowed_amount
     , data_source
