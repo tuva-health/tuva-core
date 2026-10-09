@@ -225,3 +225,251 @@ unit_tests:
           service_category_2: office-based surgery
           service_category_3: office-based surgery
           tuva_last_run: '2024-01-01 00:00:00'
+
+  - name: test_office_based_physical_therapy_splits_service_category_3_by_discipline
+    description: >
+      Verifies that office-based PT/OT/ST claim lines get a discipline-specific
+      service_category_3 while service_category_2 stays the rollup value.
+      CCS category takes precedence over rendering specialty, and specialty
+      alone determines the discipline when the CCS category is absent.
+      Coverage for https://github.com/tuva-health/tuva-core/issues/1016.
+    model: service_category__office_based_physical_therapy_professional
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('service_category__stg_medical_claim')
+        format: sql
+        rows: |
+          select
+              'pt_by_ccs' as claim_id
+            , 1 as claim_line_number
+            , 'source_a' as data_source
+            , 'pt_by_ccs|1|source_a' as claim_line_id
+            , '213' as ccs_category
+            , cast(null as varchar) as rend_primary_specialty_description
+            , '11' as place_of_service_code
+          union all
+          select
+              'ot_by_ccs', 1, 'source_a', 'ot_by_ccs|1|source_a'
+            , '212', cast(null as varchar), '11'
+          union all
+          select
+              'st_by_ccs', 1, 'source_a', 'st_by_ccs|1|source_a'
+            , '215', cast(null as varchar), '11'
+          union all
+          select
+              'pt_by_specialty', 1, 'source_a', 'pt_by_specialty|1|source_a'
+            , cast(null as varchar), 'Physical Therapist', '11'
+          union all
+          select
+              'ot_by_specialty', 1, 'source_a', 'ot_by_specialty|1|source_a'
+            , cast(null as varchar), 'Occupational Therapist in Private Practice', '11'
+          union all
+          select
+              'st_by_specialty', 1, 'source_a', 'st_by_specialty|1|source_a'
+            , cast(null as varchar), 'Speech Language Pathologist', '11'
+          union all
+          select
+              'ccs_beats_specialty', 1, 'source_a', 'ccs_beats_specialty|1|source_a'
+            , '212', 'Physical Therapist', '11'
+      - input: ref('service_category__stg_office_based')
+        format: sql
+        rows: |
+          select 'pt_by_ccs' as claim_id, 1 as claim_line_number, 'source_a' as data_source
+          union all select 'ot_by_ccs', 1, 'source_a'
+          union all select 'st_by_ccs', 1, 'source_a'
+          union all select 'pt_by_specialty', 1, 'source_a'
+          union all select 'ot_by_specialty', 1, 'source_a'
+          union all select 'st_by_specialty', 1, 'source_a'
+          union all select 'ccs_beats_specialty', 1, 'source_a'
+    expect:
+      rows:
+        - claim_id: pt_by_ccs
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: pt_by_ccs|1|source_a
+          service_category_1: office-based
+          service_category_2: office-based pt/ot/st
+          service_category_3: office-based physical therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: ot_by_ccs
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: ot_by_ccs|1|source_a
+          service_category_1: office-based
+          service_category_2: office-based pt/ot/st
+          service_category_3: office-based occupational therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: st_by_ccs
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: st_by_ccs|1|source_a
+          service_category_1: office-based
+          service_category_2: office-based pt/ot/st
+          service_category_3: office-based speech therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: pt_by_specialty
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: pt_by_specialty|1|source_a
+          service_category_1: office-based
+          service_category_2: office-based pt/ot/st
+          service_category_3: office-based physical therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: ot_by_specialty
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: ot_by_specialty|1|source_a
+          service_category_1: office-based
+          service_category_2: office-based pt/ot/st
+          service_category_3: office-based occupational therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: st_by_specialty
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: st_by_specialty|1|source_a
+          service_category_1: office-based
+          service_category_2: office-based pt/ot/st
+          service_category_3: office-based speech therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: ccs_beats_specialty
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: ccs_beats_specialty|1|source_a
+          service_category_1: office-based
+          service_category_2: office-based pt/ot/st
+          service_category_3: office-based occupational therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+
+  - name: test_outpatient_physical_therapy_splits_service_category_3_by_discipline
+    description: >
+      Verifies that outpatient professional PT/OT/ST claim lines get a
+      discipline-specific service_category_3 while service_category_2 stays the
+      rollup value. CCS category takes precedence over primary specialty.
+      Coverage for https://github.com/tuva-health/tuva-core/issues/1016.
+    model: service_category__outpatient_physical_therapy_professional
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('service_category__stg_medical_claim')
+        format: sql
+        rows: |
+          select
+              'pt_by_ccs' as claim_id
+            , 1 as claim_line_number
+            , 'source_a' as data_source
+            , 'pt_by_ccs|1|source_a' as claim_line_id
+            , '213' as ccs_category
+            , cast(null as varchar) as primary_specialty_description
+            , '22' as place_of_service_code
+          union all
+          select
+              'ot_by_specialty', 1, 'source_a', 'ot_by_specialty|1|source_a'
+            , cast(null as varchar), 'Occupational Therapy Assistant', '22'
+          union all
+          select
+              'st_by_specialty', 1, 'source_a', 'st_by_specialty|1|source_a'
+            , cast(null as varchar), 'Speech-Language Assistant', '22'
+          union all
+          select
+              'ccs_beats_specialty', 1, 'source_a', 'ccs_beats_specialty|1|source_a'
+            , '215', 'Physical Therapy Assistant', '22'
+      - input: ref('service_category__stg_professional')
+        format: sql
+        rows: |
+          select 'pt_by_ccs' as claim_id, 1 as claim_line_number, 'source_a' as data_source
+          union all select 'ot_by_specialty', 1, 'source_a'
+          union all select 'st_by_specialty', 1, 'source_a'
+          union all select 'ccs_beats_specialty', 1, 'source_a'
+    expect:
+      rows:
+        - claim_id: pt_by_ccs
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: pt_by_ccs|1|source_a
+          service_category_1: outpatient
+          service_category_2: outpatient pt/ot/st
+          service_category_3: outpatient physical therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: ot_by_specialty
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: ot_by_specialty|1|source_a
+          service_category_1: outpatient
+          service_category_2: outpatient pt/ot/st
+          service_category_3: outpatient occupational therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: st_by_specialty
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: st_by_specialty|1|source_a
+          service_category_1: outpatient
+          service_category_2: outpatient pt/ot/st
+          service_category_3: outpatient speech therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: ccs_beats_specialty
+          claim_line_number: 1
+          data_source: source_a
+          claim_line_id: ccs_beats_specialty|1|source_a
+          service_category_1: outpatient
+          service_category_2: outpatient pt/ot/st
+          service_category_3: outpatient speech therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+
+  - name: test_outpatient_institutional_physical_therapy_splits_service_category_3
+    description: >
+      Verifies that outpatient institutional PT/OT/ST claim lines get a
+      discipline-specific service_category_3 from the CCS category while
+      service_category_2 stays the rollup value.
+      Coverage for https://github.com/tuva-health/tuva-core/issues/1016.
+    model: service_category__outpatient_physical_therapy_institutional
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('service_category__stg_medical_claim')
+        format: sql
+        rows: |
+          select 'pt_claim' as claim_id, 1 as claim_line_number, 'source_a' as data_source, '213' as ccs_category
+          union all select 'ot_claim', 1, 'source_a', '212'
+          union all select 'st_claim', 1, 'source_a', '215'
+      - input: ref('service_category__stg_outpatient_institutional')
+        format: sql
+        rows: |
+          select 'pt_claim' as claim_id, 'source_a' as data_source
+          union all select 'ot_claim', 'source_a'
+          union all select 'st_claim', 'source_a'
+    expect:
+      rows:
+        - claim_id: pt_claim
+          claim_line_number: 1
+          data_source: source_a
+          service_category_1: outpatient
+          service_category_2: outpatient pt/ot/st
+          service_category_3: outpatient physical therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: ot_claim
+          claim_line_number: 1
+          data_source: source_a
+          service_category_1: outpatient
+          service_category_2: outpatient pt/ot/st
+          service_category_3: outpatient occupational therapy
+          tuva_last_run: '2024-01-01 00:00:00'
+        - claim_id: st_claim
+          claim_line_number: 1
+          data_source: source_a
+          service_category_1: outpatient
+          service_category_2: outpatient pt/ot/st
+          service_category_3: outpatient speech therapy
+          tuva_last_run: '2024-01-01 00:00:00'
