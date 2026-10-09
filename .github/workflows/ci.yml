@@ -79,7 +79,7 @@ on:
         required: false
       DBT_SNOWFLAKE_CI_USER:
         required: false
-      DBT_SNOWFLAKE_CI_PASSWORD:
+      DBT_SNOWFLAKE_CI_PRIVATE_KEY:
         required: false
       DBT_BIGQUERY_CI_TOKEN:
         required: false
@@ -844,8 +844,37 @@ jobs:
           DBT_SNOWFLAKE_CI_ROLE: ${{ secrets.DBT_SNOWFLAKE_CI_ROLE }}
           DBT_SNOWFLAKE_CI_SCHEMA: ${{ secrets.DBT_SNOWFLAKE_CI_SCHEMA }}
           DBT_SNOWFLAKE_CI_USER: ${{ secrets.DBT_SNOWFLAKE_CI_USER }}
-          DBT_SNOWFLAKE_CI_PASSWORD: ${{ secrets.DBT_SNOWFLAKE_CI_PASSWORD }}
+          DBT_SNOWFLAKE_CI_PRIVATE_KEY: ${{ secrets.DBT_SNOWFLAKE_CI_PRIVATE_KEY }}
         run: |
+          # dbt-snowflake reads private_key_path as raw PEM bytes. A multiline
+          # secret kept in the process environment can arrive with real newlines
+          # or with literal \n escapes, and the adapter does not normalize those
+          # escapes on the private_key string. Write a PKCS8 PEM file instead.
+          key_path="${RUNNER_TEMP}/snowflake_ci_private_key.pem"
+          export DBT_SNOWFLAKE_CI_PRIVATE_KEY_PATH="$key_path"
+          trap 'rm -f "$DBT_SNOWFLAKE_CI_PRIVATE_KEY_PATH"' EXIT
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          raw = os.environ.get("DBT_SNOWFLAKE_CI_PRIVATE_KEY", "")
+          text = raw.replace("\r\n", "\n").replace("\r", "\n")
+          text = text.replace("\\r\\n", "\n").replace("\\n", "\n").strip()
+          begin = "-----BEGIN PRIVATE KEY-----"
+          end = "-----END PRIVATE KEY-----"
+          if not text.startswith(begin) or not text.endswith(end):
+              raise SystemExit(
+                  "DBT_SNOWFLAKE_CI_PRIVATE_KEY must be an unencrypted PKCS8 PEM "
+                  "beginning with BEGIN PRIVATE KEY and ending with END PRIVATE KEY."
+              )
+          key_path = Path(os.environ["DBT_SNOWFLAKE_CI_PRIVATE_KEY_PATH"])
+          fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+          with os.fdopen(fd, "w", encoding="utf-8") as handle:
+              handle.write(text + "\n")
+          os.chmod(key_path, 0o600)
+          print(f"Prepared Snowflake key-pair file ({key_path.stat().st_size} bytes)")
+          PY
+          unset DBT_SNOWFLAKE_CI_PRIVATE_KEY
           read -r -a ci_selectors <<< "$CI_DBT_SELECTOR"
           dbt debug --project-dir ./integration_tests --profiles-dir ./integration_tests/profiles/snowflake
           if [[ "$CI_SCOPE" == "core" ]]; then
