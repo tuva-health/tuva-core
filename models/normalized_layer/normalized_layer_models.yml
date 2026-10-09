@@ -468,8 +468,8 @@ models:
       Primary key: person_id, data_source.
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {%- else -%}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_normalized_layer
+        {%- else -%}normalized_layer{%- endif -%}
       alias: normalized__eligibility_remove_duplicates
       meta:
         dag:
@@ -549,8 +549,8 @@ models:
       The normalized medical claim table casts and normalizes input layer medical claim lines. It preserves one row per input claim line and keeps diagnosis code fields at the claim-line grain; downstream algorithms that require one diagnosis array per claim use int_claim_level_diagnosis.
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {%- else -%}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_normalized_layer
+        {%- else -%}normalized_layer{%- endif -%}
       alias: normalized__medical_claim
       materialized: table
       tags:
@@ -1290,8 +1290,8 @@ models:
       were filled and billed to the insurer.
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {%- else -%}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_normalized_layer
+        {%- else -%}normalized_layer{%- endif -%}
       alias: normalized__pharmacy_claim
       materialized: table
       tags:
@@ -1392,8 +1392,8 @@ models:
       This model creates the normalized provider attribution input used by Claims Preprocessing Attribution. It casts externally supplied payer-attributed and custom-attributed member-month fields from input_layer__provider_attribution to package data types when provider attribution is enabled. When provider attribution is disabled, it returns an empty relation with the same columns so downstream attribution outputs can still build with null attribution fields.
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {%- else -%}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_normalized_layer
+        {%- else -%}normalized_layer{%- endif -%}
       alias: normalized__provider_attribution
       materialized: table
       tags:
@@ -1543,8 +1543,8 @@ models:
       The model keeps one distinct row per person_id and person_id_key.
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {%- else -%}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_normalized_layer
+        {%- else -%}normalized_layer{%- endif -%}
       alias: int_eligibility_dates_normalized
       meta:
         dag:
@@ -1728,8 +1728,8 @@ models:
       Primary key: person_id_key.
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {%- else -%}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_normalized_layer
+        {%- else -%}normalized_layer{%- endif -%}
       alias: int_eligibility_casting
       meta:
         dag:
@@ -1884,8 +1884,8 @@ models:
       The model returns the matched ANSI/FIPS state name, state code, and state abbreviation. If the source state value does not match the reference table, normalized_state_name, fips_state_code, and fips_state_abbreviation are null.
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {%- else -%}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_normalized_layer
+        {%- else -%}normalized_layer{%- endif -%}
       alias: int_eligibility_state_normalized
       meta:
         dag:
