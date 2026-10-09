@@ -49,15 +49,16 @@ unit_tests:
                 , cast(2 as {{ numeric_type }}) as copayment_amount
                 , cast(3 as {{ numeric_type }}) as deductible_amount
                 , cast(16 as {{ numeric_type }}) as total_cost_amount
+                , cast(5 as {{ numeric_type }}) as paid_reduced_by
                 , 1 as in_network_flag
                 , cast('2024-01-31' as date) as file_date
                 , cast('2024-02-01 00:00:00' as {{ timestamp_type }}) as ingest_datetime
                 , 'medical_claim.csv' as file_name
                 , 'source-a' as data_source
               union all
-              select 'mc-u-2', 'undetermined_claim', 2, 'undetermined', 'person-1', 'member-1', 'payer-a', 'plan-a', cast('2024-01-01' as date), cast('2024-01-02' as date), cast('2024-01-02' as date), cast('2024-01-02' as date), cast(2 as {{ numeric_type }}), 'A0425', '1111111111', cast('2024-01-10' as date), cast(20 as {{ numeric_type }}), cast(22 as {{ numeric_type }}), cast(25 as {{ numeric_type }}), cast(2 as {{ numeric_type }}), cast(3 as {{ numeric_type }}), cast(4 as {{ numeric_type }}), cast(31 as {{ numeric_type }}), 0, cast('2024-01-31' as date), cast('2024-02-01 00:00:00' as {{ timestamp_type }}), 'medical_claim.csv', 'source-a'
+              select 'mc-u-2', 'undetermined_claim', 2, 'undetermined', 'person-1', 'member-1', 'payer-a', 'plan-a', cast('2024-01-01' as date), cast('2024-01-02' as date), cast('2024-01-02' as date), cast('2024-01-02' as date), cast(2 as {{ numeric_type }}), 'A0425', '1111111111', cast('2024-01-10' as date), cast(20 as {{ numeric_type }}), cast(22 as {{ numeric_type }}), cast(25 as {{ numeric_type }}), cast(2 as {{ numeric_type }}), cast(3 as {{ numeric_type }}), cast(4 as {{ numeric_type }}), cast(31 as {{ numeric_type }}), cast(0 as {{ numeric_type }}), 0, cast('2024-01-31' as date), cast('2024-02-01 00:00:00' as {{ timestamp_type }}), 'medical_claim.csv', 'source-a'
               union all
-              select 'mc-p-1', 'professional_claim', 1, 'professional', 'person-2', 'member-2', 'payer-b', 'plan-b', cast('2024-03-01' as date), cast('2024-03-01' as date), cast('2024-03-01' as date), cast('2024-03-01' as date), cast(1 as {{ numeric_type }}), '99214', '2222222222', cast('2024-03-10' as date), cast(30 as {{ numeric_type }}), cast(32 as {{ numeric_type }}), cast(35 as {{ numeric_type }}), cast(0 as {{ numeric_type }}), cast(0 as {{ numeric_type }}), cast(0 as {{ numeric_type }}), cast(32 as {{ numeric_type }}), 1, cast('2024-03-31' as date), cast('2024-04-01 00:00:00' as {{ timestamp_type }}), 'medical_claim.csv', 'source-b'
+              select 'mc-p-1', 'professional_claim', 1, 'professional', 'person-2', 'member-2', 'payer-b', 'plan-b', cast('2024-03-01' as date), cast('2024-03-01' as date), cast('2024-03-01' as date), cast('2024-03-01' as date), cast(1 as {{ numeric_type }}), '99214', '2222222222', cast('2024-03-10' as date), cast(30 as {{ numeric_type }}), cast(32 as {{ numeric_type }}), cast(35 as {{ numeric_type }}), cast(0 as {{ numeric_type }}), cast(0 as {{ numeric_type }}), cast(0 as {{ numeric_type }}), cast(32 as {{ numeric_type }}), cast(12.5 as {{ numeric_type }}), 1, cast('2024-03-31' as date), cast('2024-04-01 00:00:00' as {{ timestamp_type }}), 'medical_claim.csv', 'source-b'
           {% endset %}
           select
               base.*
@@ -148,6 +149,7 @@ unit_tests:
           paid_amount: 10
           allowed_amount: 12
           charge_amount: 15
+          paid_reduced_by: 5
           data_source: source-a
         - medical_claim_id: mc-u-2
           claim_id: undetermined_claim
@@ -162,6 +164,7 @@ unit_tests:
           paid_amount: 20
           allowed_amount: 22
           charge_amount: 25
+          paid_reduced_by: 0
           data_source: source-a
         - medical_claim_id: mc-p-1
           claim_id: professional_claim
@@ -176,4 +179,5 @@ unit_tests:
           paid_amount: 30
           allowed_amount: 32
           charge_amount: 35
+          paid_reduced_by: 12.5
           data_source: source-b

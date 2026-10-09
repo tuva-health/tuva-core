@@ -62,6 +62,7 @@
     , med.copayment_amount
     , med.deductible_amount
     , med.total_cost_amount
+    , med.paid_reduced_by
     , med.in_network_flag
     , cast(
         case
