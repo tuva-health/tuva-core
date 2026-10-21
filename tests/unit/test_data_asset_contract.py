@@ -96,52 +96,6 @@ SSA_FIPS_STATE_COUNTY_CROSSWALK_HEADER = [
     "countyname_rate",
 ]
 
-# Full assignment-windows seed: released 1.0.0 rows for 2026, 2025, and 2024,
-# plus 2023 and 2022. Performance year descending, retrospective before
-# prospective, service year descending.
-ASSIGNMENT_WINDOWS_ROWS = [
-    ["2026", "2026", "retrospective", "1/1/2025", "1/1/2026", "12/31/2026"],
-    ["2026", "2025", "retrospective", "1/1/2024", "1/1/2025", "12/31/2025"],
-    ["2026", "2024", "retrospective", "1/1/2023", "1/1/2024", "12/31/2024"],
-    ["2026", "2023", "retrospective", "1/1/2022", "1/1/2023", "12/31/2023"],
-    ["2026", "2026", "prospective", "10/1/2023", "10/1/2024", "9/30/2025"],
-    ["2026", "2025", "prospective", "10/1/2022", "10/1/2023", "9/30/2024"],
-    ["2026", "2024", "prospective", "10/1/2021", "10/1/2022", "9/30/2023"],
-    ["2026", "2023", "prospective", "10/1/2020", "10/1/2021", "9/30/2022"],
-    ["2025", "2025", "retrospective", "1/1/2024", "1/1/2025", "12/31/2025"],
-    ["2025", "2024", "retrospective", "1/1/2023", "1/1/2024", "12/31/2024"],
-    ["2025", "2023", "retrospective", "1/1/2022", "1/1/2023", "12/31/2023"],
-    ["2025", "2022", "retrospective", "1/1/2021", "1/1/2022", "12/31/2022"],
-    ["2025", "2025", "prospective", "10/1/2022", "10/1/2023", "9/30/2024"],
-    ["2025", "2024", "prospective", "10/1/2021", "10/1/2022", "9/30/2023"],
-    ["2025", "2023", "prospective", "10/1/2020", "10/1/2021", "9/30/2022"],
-    ["2025", "2022", "prospective", "10/1/2019", "10/1/2020", "9/30/2021"],
-    ["2024", "2024", "retrospective", "1/1/2023", "1/1/2024", "12/31/2024"],
-    ["2024", "2023", "retrospective", "1/1/2022", "1/1/2023", "12/31/2023"],
-    ["2024", "2022", "retrospective", "1/1/2021", "1/1/2022", "12/31/2022"],
-    ["2024", "2021", "retrospective", "1/1/2020", "1/1/2021", "12/31/2021"],
-    ["2024", "2024", "prospective", "10/1/2021", "10/1/2022", "9/30/2023"],
-    ["2024", "2023", "prospective", "10/1/2020", "10/1/2021", "9/30/2022"],
-    ["2024", "2022", "prospective", "10/1/2019", "10/1/2020", "9/30/2021"],
-    ["2024", "2021", "prospective", "10/1/2018", "10/1/2019", "9/30/2020"],
-    ["2023", "2023", "retrospective", "1/1/2022", "1/1/2023", "12/31/2023"],
-    ["2023", "2022", "retrospective", "1/1/2021", "1/1/2022", "12/31/2022"],
-    ["2023", "2021", "retrospective", "1/1/2020", "1/1/2021", "12/31/2021"],
-    ["2023", "2020", "retrospective", "1/1/2019", "1/1/2020", "12/31/2020"],
-    ["2023", "2023", "prospective", "10/1/2020", "10/1/2021", "9/30/2022"],
-    ["2023", "2022", "prospective", "10/1/2019", "10/1/2020", "9/30/2021"],
-    ["2023", "2021", "prospective", "10/1/2018", "10/1/2019", "9/30/2020"],
-    ["2023", "2020", "prospective", "10/1/2017", "10/1/2018", "9/30/2019"],
-    ["2022", "2022", "retrospective", "1/1/2021", "1/1/2022", "12/31/2022"],
-    ["2022", "2021", "retrospective", "1/1/2020", "1/1/2021", "12/31/2021"],
-    ["2022", "2020", "retrospective", "1/1/2019", "1/1/2020", "12/31/2020"],
-    ["2022", "2019", "retrospective", "1/1/2018", "1/1/2019", "12/31/2019"],
-    ["2022", "2022", "prospective", "10/1/2019", "10/1/2020", "9/30/2021"],
-    ["2022", "2021", "prospective", "10/1/2018", "10/1/2019", "9/30/2020"],
-    ["2022", "2020", "prospective", "10/1/2017", "10/1/2018", "9/30/2019"],
-    ["2022", "2019", "prospective", "10/1/2016", "10/1/2017", "9/30/2018"],
-]
-
 
 def parse_seed_hooks():
     hooks = {}
@@ -202,12 +156,7 @@ class DataAssetContractTest(unittest.TestCase):
                 header = next(rows, [])
                 self.assertTrue(header, seed_name)
                 self.assertTrue(all(header), seed_name)
-                # This lookup is checked in with its performance-year rows.
-                # Every other package seed stays a header-only loader contract.
-                if seed_name == "cms_provider_attribution__assignment_windows":
-                    self.assertEqual(list(rows), ASSIGNMENT_WINDOWS_ROWS)
-                else:
-                    self.assertIsNone(next(rows, None), seed_name)
+                self.assertIsNone(next(rows, None), seed_name)
 
     def test_grouper_primary_keys_reference_existing_columns(self):
         for family in ("condition", "procedure"):
