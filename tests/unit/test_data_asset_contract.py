@@ -96,9 +96,9 @@ SSA_FIPS_STATE_COUNTY_CROSSWALK_HEADER = [
     "countyname_rate",
 ]
 
-# Rows copied from DoltHub tuva-health/value-sets pull 7. Ordered like the
-# published assignment-windows payload: performance year descending,
-# retrospective before prospective, service year descending.
+# Full assignment-windows seed: released 1.0.0 rows for 2026, 2025, and 2024,
+# plus 2023 and 2022. Performance year descending, retrospective before
+# prospective, service year descending.
 ASSIGNMENT_WINDOWS_ROWS = [
     ["2026", "2026", "retrospective", "1/1/2025", "1/1/2026", "12/31/2026"],
     ["2026", "2025", "retrospective", "1/1/2024", "1/1/2025", "12/31/2025"],
@@ -108,6 +108,22 @@ ASSIGNMENT_WINDOWS_ROWS = [
     ["2026", "2025", "prospective", "10/1/2022", "10/1/2023", "9/30/2024"],
     ["2026", "2024", "prospective", "10/1/2021", "10/1/2022", "9/30/2023"],
     ["2026", "2023", "prospective", "10/1/2020", "10/1/2021", "9/30/2022"],
+    ["2025", "2025", "retrospective", "1/1/2024", "1/1/2025", "12/31/2025"],
+    ["2025", "2024", "retrospective", "1/1/2023", "1/1/2024", "12/31/2024"],
+    ["2025", "2023", "retrospective", "1/1/2022", "1/1/2023", "12/31/2023"],
+    ["2025", "2022", "retrospective", "1/1/2021", "1/1/2022", "12/31/2022"],
+    ["2025", "2025", "prospective", "10/1/2022", "10/1/2023", "9/30/2024"],
+    ["2025", "2024", "prospective", "10/1/2021", "10/1/2022", "9/30/2023"],
+    ["2025", "2023", "prospective", "10/1/2020", "10/1/2021", "9/30/2022"],
+    ["2025", "2022", "prospective", "10/1/2019", "10/1/2020", "9/30/2021"],
+    ["2024", "2024", "retrospective", "1/1/2023", "1/1/2024", "12/31/2024"],
+    ["2024", "2023", "retrospective", "1/1/2022", "1/1/2023", "12/31/2023"],
+    ["2024", "2022", "retrospective", "1/1/2021", "1/1/2022", "12/31/2022"],
+    ["2024", "2021", "retrospective", "1/1/2020", "1/1/2021", "12/31/2021"],
+    ["2024", "2024", "prospective", "10/1/2021", "10/1/2022", "9/30/2023"],
+    ["2024", "2023", "prospective", "10/1/2020", "10/1/2021", "9/30/2022"],
+    ["2024", "2022", "prospective", "10/1/2019", "10/1/2020", "9/30/2021"],
+    ["2024", "2021", "prospective", "10/1/2018", "10/1/2019", "9/30/2020"],
     ["2023", "2023", "retrospective", "1/1/2022", "1/1/2023", "12/31/2023"],
     ["2023", "2022", "retrospective", "1/1/2021", "1/1/2022", "12/31/2022"],
     ["2023", "2021", "retrospective", "1/1/2020", "1/1/2021", "12/31/2021"],
