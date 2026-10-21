@@ -42,7 +42,7 @@ vars:
 
   ## Data assets
   # Package code and data-asset versions are independent and manually coordinated.
-  tuva_core_data_asset_version: '1.0.0' # Loads tuva-core/1.0.0/.
+  tuva_core_data_asset_version: '1.1.0' # Loads tuva-core/1.1.0/.
   custom_bucket_name: tuva-public-resources  # Default public bucket for package data assets.
 
   ## Schema naming

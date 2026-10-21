@@ -206,7 +206,7 @@ CodeRx Open is the default medication terminology. When
   Package code and data-asset versions are intentionally independent and are
   coordinated manually. Do not add separate terminology, value-set,
   provider-data, or synthetic-data version variables.
-- Core uses `tuva_core_data_asset_version`, defaulting to `1.0.0`, directly in
+- Core uses `tuva_core_data_asset_version`, defaulting to `1.1.0`, directly in
   `tuva-core/<data-asset-version>/`.
 - Checked-in package seed CSVs are header-only dbt loader contracts. Published
   object-storage payloads are the released data contents.
