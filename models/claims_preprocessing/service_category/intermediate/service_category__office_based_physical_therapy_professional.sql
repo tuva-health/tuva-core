@@ -10,7 +10,27 @@ select distinct
     , med.claim_line_id
     , 'office-based' as service_category_1
     , 'office-based pt/ot/st' as service_category_2
-    , 'office-based pt/ot/st' as service_category_3
+    , case
+        when med.ccs_category = '213' then 'office-based physical therapy'
+        when med.ccs_category = '212' then 'office-based occupational therapy'
+        when med.ccs_category = '215' then 'office-based speech therapy'
+        when med.rend_primary_specialty_description in (
+            'Physical Therapist'
+            , 'Physical Therapist in Private Practice'
+            , 'Physical Therapy Assistant'
+        ) then 'office-based physical therapy'
+        when med.rend_primary_specialty_description in (
+            'Occupational Health'
+            , 'Occupational Medicine'
+            , 'Occupational Therapist in Private Practice'
+            , 'Occupational Therapy Assistant'
+        ) then 'office-based occupational therapy'
+        when med.rend_primary_specialty_description in (
+            'Speech Language Pathologist'
+            , 'Speech-Language Assistant'
+        ) then 'office-based speech therapy'
+        else 'office-based pt/ot/st'
+      end as service_category_3
     , '{{ this.name }}' as source_model_name
     , cast('{{ var('tuva_last_run') }}' as {{ dbt.type_timestamp() }}) as tuva_last_run
 from {{ ref('service_category__stg_medical_claim') }} as med
