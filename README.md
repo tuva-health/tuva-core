@@ -123,6 +123,19 @@ See [Getting Started](https://www.thetuvaproject.com/getting-started) and the
 [dbt Variables reference](https://www.thetuvaproject.com/dbt-variables) for
 connector, Input Layer, warehouse, and configuration details.
 
+## Model schemas
+
+Internal models use their owning component's schema: `core`,
+`normalized_layer`, or `claims_preprocessing`. They no longer create a generic
+`intermediate` schema. `tuva_schema_prefix` still prefixes these schema names,
+and parent-project schema overrides still take precedence.
+
+When upgrading from a revision that used `intermediate`, rebuild the Core
+models so downstream references use the new locations. dbt does not remove
+old relations automatically; remove the obsolete tables only after confirming
+that no external queries depend on them. Model names, aliases, and columns are
+unchanged.
+
 ## Important 1.0 Contracts
 
 - Public fields ending in `_flag` are nullable binary integers: `1` means true,
