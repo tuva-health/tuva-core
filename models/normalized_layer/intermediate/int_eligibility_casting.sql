@@ -16,14 +16,15 @@ with eligibility_source as (
 
 select
       cast(elig.person_id as {{ dbt.type_string() }}) as person_id
-    , {{ concat_custom([
-        "elig.person_id",
-        "coalesce(cast(elig.member_id as " ~ dbt.type_string() ~ "),'')",
-        "coalesce(elig.data_source,'')",
-        "coalesce(elig.payer,'')",
-        "coalesce(elig." ~ quote_column('plan') ~ ",'')",
-        "coalesce(cast(elig.enrollment_start_date as " ~ dbt.type_string() ~ "),'')",
-        "coalesce(cast(elig._canonical_enrollment_end_date as " ~ dbt.type_string() ~ "),'')"
+    , {{ the_tuva_project.stable_id_hash([
+        "'eligibility person key'",
+        'elig.person_id',
+        'elig.member_id',
+        'elig.data_source',
+        'elig.payer',
+        'elig.' ~ quote_column('plan'),
+        'elig.enrollment_start_date',
+        'elig._canonical_enrollment_end_date'
     ]) }} as person_id_key
     , cast(elig.member_id as {{ dbt.type_string() }}) as member_id
     , cast(elig.subscriber_id as {{ dbt.type_string() }}) as subscriber_id
