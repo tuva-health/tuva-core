@@ -622,19 +622,19 @@ seeds:
           {%- if target.type in ("bigquery", "databricks") -%} string {%- else -%} varchar(255) {%- endif -%}
         paid_date: date
         paid_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         allowed_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         charge_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         coinsurance_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         copayment_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         deductible_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         total_cost_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         diagnosis_code_type: |
           {%- if target.type in ("bigquery", "databricks") -%} string {%- else -%} varchar(255) {%- endif -%}
         diagnosis_code_1: |
@@ -931,17 +931,17 @@ seeds:
         refills: integer
         paid_date: date
         paid_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         allowed_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         charge_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         coinsurance_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         copayment_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         deductible_amount: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         in_network_flag: integer
         data_source: |
           {%- if target.type in ("bigquery", "databricks") -%} string {%- else -%} varchar(255) {%- endif -%}
@@ -1003,9 +1003,9 @@ seeds:
         county: |
           {%- if target.type in ("bigquery", "databricks") -%} string {%- else -%} varchar(255) {%- endif -%}
         latitude: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         longitude: |
-          {%- if target.type in ("athena", "databricks") -%} real {%- else -%} float {%- endif -%}
+          {%- if target.type in ("athena", "databricks") -%} real {%- elif target.type == "bigquery" -%} float64 {%- else -%} float {%- endif -%}
         phone: |
           {%- if target.type in ("bigquery", "databricks") -%} string {%- else -%} varchar(255) {%- endif -%}
         email: |
