@@ -457,6 +457,7 @@ unit_tests:
             , cast(null as {{ string_type }}) as claim_line_number
             , cast(null as {{ string_type }}) as data_source
             , cast(null as {{ string_type }}) as claim_start_date
+            , cast(null as {{ string_type }}) as claim_end_date
             , cast(null as {{ string_type }}) as claim_line_start_date
             , cast(null as {{ string_type }}) as claim_line_end_date
             , cast(null as {{ string_type }}) as admission_date

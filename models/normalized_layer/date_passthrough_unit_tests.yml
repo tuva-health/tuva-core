@@ -37,3 +37,265 @@ unit_tests:
           normalized_admission_date: '1899-12-29'
           normalized_discharge_date: '2101-01-03'
           tuva_last_run: '2024-02-15 00:00:00'
+
+  - name: test_normalized_medical_claim_keeps_undetermined_claim_end_date
+    description: >-
+      Proves that undetermined claims, which bypass the institutional and
+      professional date aggregation, keep their own claim_end_date instead of
+      receiving claim_start_date, including when only an end date is sent.
+    model: normalized__medical_claim
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        _extension_columns_override: []
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized_input__stg_medical_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set null_columns = [
+              'person_id', 'member_id', 'payer', 'drg_code_type', 'service_unit_quantity',
+              'hcpcs_code', 'hcpcs_modifier_1', 'hcpcs_modifier_2', 'hcpcs_modifier_3', 'hcpcs_modifier_4',
+              'hcpcs_modifier_5', 'rendering_tin', 'billing_tin', 'paid_date', 'paid_amount', 'allowed_amount',
+              'charge_amount', 'coinsurance_amount', 'copayment_amount', 'deductible_amount', 'total_cost_amount',
+              'diagnosis_code_type', 'procedure_code_type', 'in_network_flag', 'file_date', 'ingest_datetime', 'file_name'
+          ] %}
+          {% for claim_id in ['claim-1', 'claim-2'] %}
+          select
+              '{{ claim_id }}' as claim_id
+            , 1 as claim_line_number
+            , 'undetermined' as claim_type
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            {% for column in null_columns %}
+            , cast(null as {{ string_type }}) as {{ column }}
+            {% endfor %}
+            {% for i in range(1, 26) %}
+            , cast(null as {{ string_type }}) as diagnosis_code_{{ i }}
+            , cast(null as {{ string_type }}) as diagnosis_poa_{{ i }}
+            {% endfor %}
+            , 'source' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('normalized_input__int_admit_source_final')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_code
+            , cast(null as {{ string_type }}) as normalized_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_admit_type_final')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_code
+            , cast(null as {{ string_type }}) as normalized_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_bill_type_final')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_code
+            , cast(null as {{ string_type }}) as normalized_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_medical_claim_date_normalize')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as claim_line_number
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_claim_line_start_date
+            , cast(null as {{ string_type }}) as normalized_claim_line_end_date
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_medical_date_aggregation')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as minimum_claim_start_date
+            , cast(null as {{ string_type }}) as maximum_claim_end_date
+            , cast(null as {{ string_type }}) as minimum_admission_date
+            , cast(null as {{ string_type }}) as maximum_discharge_date
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_medical_npi_normalize')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as claim_line_number
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_rendering_npi
+            , cast(null as {{ string_type }}) as normalized_rendering_name
+            , cast(null as {{ string_type }}) as normalized_billing_npi
+            , cast(null as {{ string_type }}) as normalized_billing_name
+            , cast(null as {{ string_type }}) as normalized_facility_npi
+            , cast(null as {{ string_type }}) as normalized_facility_name
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_discharge_disposition_final')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_code
+            , cast(null as {{ string_type }}) as normalized_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_drg_final')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_code
+            , cast(null as {{ string_type }}) as normalized_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_place_of_service_normalize')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as claim_line_number
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_code
+            , cast(null as {{ string_type }}) as normalized_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_procedure_code_final')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as procedure_code_1
+            , cast(null as {{ string_type }}) as procedure_code_2
+            , cast(null as {{ string_type }}) as procedure_code_3
+            , cast(null as {{ string_type }}) as procedure_code_4
+            , cast(null as {{ string_type }}) as procedure_code_5
+            , cast(null as {{ string_type }}) as procedure_code_6
+            , cast(null as {{ string_type }}) as procedure_code_7
+            , cast(null as {{ string_type }}) as procedure_code_8
+            , cast(null as {{ string_type }}) as procedure_code_9
+            , cast(null as {{ string_type }}) as procedure_code_10
+            , cast(null as {{ string_type }}) as procedure_code_11
+            , cast(null as {{ string_type }}) as procedure_code_12
+            , cast(null as {{ string_type }}) as procedure_code_13
+            , cast(null as {{ string_type }}) as procedure_code_14
+            , cast(null as {{ string_type }}) as procedure_code_15
+            , cast(null as {{ string_type }}) as procedure_code_16
+            , cast(null as {{ string_type }}) as procedure_code_17
+            , cast(null as {{ string_type }}) as procedure_code_18
+            , cast(null as {{ string_type }}) as procedure_code_19
+            , cast(null as {{ string_type }}) as procedure_code_20
+            , cast(null as {{ string_type }}) as procedure_code_21
+            , cast(null as {{ string_type }}) as procedure_code_22
+            , cast(null as {{ string_type }}) as procedure_code_23
+            , cast(null as {{ string_type }}) as procedure_code_24
+            , cast(null as {{ string_type }}) as procedure_code_25
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_procedure_date_final')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as procedure_date_1
+            , cast(null as {{ string_type }}) as procedure_date_2
+            , cast(null as {{ string_type }}) as procedure_date_3
+            , cast(null as {{ string_type }}) as procedure_date_4
+            , cast(null as {{ string_type }}) as procedure_date_5
+            , cast(null as {{ string_type }}) as procedure_date_6
+            , cast(null as {{ string_type }}) as procedure_date_7
+            , cast(null as {{ string_type }}) as procedure_date_8
+            , cast(null as {{ string_type }}) as procedure_date_9
+            , cast(null as {{ string_type }}) as procedure_date_10
+            , cast(null as {{ string_type }}) as procedure_date_11
+            , cast(null as {{ string_type }}) as procedure_date_12
+            , cast(null as {{ string_type }}) as procedure_date_13
+            , cast(null as {{ string_type }}) as procedure_date_14
+            , cast(null as {{ string_type }}) as procedure_date_15
+            , cast(null as {{ string_type }}) as procedure_date_16
+            , cast(null as {{ string_type }}) as procedure_date_17
+            , cast(null as {{ string_type }}) as procedure_date_18
+            , cast(null as {{ string_type }}) as procedure_date_19
+            , cast(null as {{ string_type }}) as procedure_date_20
+            , cast(null as {{ string_type }}) as procedure_date_21
+            , cast(null as {{ string_type }}) as procedure_date_22
+            , cast(null as {{ string_type }}) as procedure_date_23
+            , cast(null as {{ string_type }}) as procedure_date_24
+            , cast(null as {{ string_type }}) as procedure_date_25
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_revenue_center_normalize')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ string_type }}) as claim_line_number
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as normalized_code
+            , cast(null as {{ string_type }}) as normalized_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('normalized_input__int_undetermined_claim_type')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set null_columns = [
+              'claim_line_start_date', 'claim_line_end_date', 'admission_date', 'discharge_date',
+              'admit_source_code', 'admit_source_description', 'admit_type_code', 'admit_type_description',
+              'discharge_disposition_code', 'discharge_disposition_description',
+              'place_of_service_code', 'place_of_service_description', 'bill_type_code', 'bill_type_description',
+              'drg_code', 'drg_description', 'revenue_center_code', 'revenue_center_description',
+              'rendering_npi', 'rendering_name', 'billing_npi', 'billing_name', 'facility_npi', 'facility_name'
+          ] %}
+          {% set rows = [
+              ('claim-1', "'2023-12-30'", "'2024-01-02'"),
+              ('claim-2', 'cast(null as ' ~ string_type ~ ')', "'2023-11-15'")
+          ] %}
+          {% for claim_id, claim_start_date, claim_end_date in rows %}
+          select
+              '{{ claim_id }}' as claim_id
+            , 1 as claim_line_number
+            , 'source' as data_source
+            , {{ claim_start_date }} as claim_start_date
+            , {{ claim_end_date }} as claim_end_date
+            {% for column in null_columns %}
+            , cast(null as {{ string_type }}) as {{ column }}
+            {% endfor %}
+            {% for i in range(1, 26) %}
+            , cast(null as {{ string_type }}) as procedure_code_{{ i }}
+            , cast(null as {{ string_type }}) as procedure_date_{{ i }}
+            {% endfor %}
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('input_layer__medical_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+    expect:
+      rows:
+        - {claim_id: claim-1, claim_start_date: '2023-12-30', claim_end_date: '2024-01-02'}
+        - {claim_id: claim-2, claim_start_date: null, claim_end_date: '2023-11-15'}
