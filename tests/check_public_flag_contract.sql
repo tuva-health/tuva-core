@@ -34,10 +34,10 @@
     {% set cpp_observation_flags = cpp_common_flags + ['observation_flag'] %}
     {% set cpp_inpatient_flags = cpp_observation_flags + ['ed_flag', 'mortality_flag'] %}
 
-    {% for model_name in ['ambulance__encounter_grain', 'asc__encounter_grain', 'dialysis__encounter_grain', 'dme__encounter_grain', 'home_health__encounter_grain', 'lab__encounter_grain'] %}
+    {% for model_name in ['ambulance__encounter_grain', 'asc__encounter_grain', 'dialysis__encounter_grain', 'dme__encounter_grain', 'home_health__encounter_grain', 'lab__encounter_grain', 'office_visit__encounter_grain', 'orphaned_claim__encounter_grain'] %}
         {% do contract_relations.append({'model_name': model_name, 'flags': cpp_common_flags}) %}
     {% endfor %}
-    {% for model_name in ['office_visit__encounter_grain', 'orphaned_claim__encounter_grain', 'outpatient_hospice__encounter_grain', 'outpatient_hospital_or_clinic__encounter_grain', 'outpatient_injections__encounter_grain', 'outpatient_psych__encounter_grain', 'outpatient_ptotst__encounter_grain', 'outpatient_radiology__encounter_grain', 'outpatient_rehab__encounter_grain', 'outpatient_substance_use__encounter_grain', 'outpatient_surgery__encounter_grain', 'urgent_care__encounter_grain'] %}
+    {% for model_name in ['outpatient_hospice__encounter_grain', 'outpatient_hospital_or_clinic__encounter_grain', 'outpatient_injections__encounter_grain', 'outpatient_psych__encounter_grain', 'outpatient_ptotst__encounter_grain', 'outpatient_radiology__encounter_grain', 'outpatient_rehab__encounter_grain', 'outpatient_substance_use__encounter_grain', 'outpatient_surgery__encounter_grain', 'urgent_care__encounter_grain'] %}
         {% do contract_relations.append({'model_name': model_name, 'flags': cpp_observation_flags}) %}
     {% endfor %}
     {% for model_name in ['inpatient_hospice__encounter_grain', 'inpatient_long_term__encounter_grain', 'inpatient_psych__encounter_grain', 'inpatient_rehab__encounter_grain', 'inpatient_substance_use__encounter_grain'] %}
