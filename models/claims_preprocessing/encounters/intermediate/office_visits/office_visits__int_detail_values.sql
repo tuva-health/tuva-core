@@ -52,7 +52,8 @@ select distinct old_encounter_id
 )
 
 
-    select
+    {# Avoid a Photon shuffled-hash-join failure when this join feeds row_number. #}
+    select {{ the_tuva_project.merge_join_hint('d') }}
       stg.paid_amount
     , stg.allowed_amount
     , stg.charge_amount
