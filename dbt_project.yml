@@ -18,7 +18,7 @@ vars:
 
   ## Seed storage configuration
   # Data-asset versions are intentionally independent from package code versions.
-  tuva_core_data_asset_version: '1.0.0'
+  tuva_core_data_asset_version: '1.1.0'
   custom_bucket_name: tuva-public-resources
 
   ## Run metadata

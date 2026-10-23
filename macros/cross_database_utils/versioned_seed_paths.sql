@@ -101,7 +101,7 @@
 {% macro get_versioned_seed_uri(database) %}
   {{ return(the_tuva_project.get_package_seed_uri(
       'tuva-core',
-      var('tuva_core_data_asset_version', '1.0.0'),
+      var('tuva_core_data_asset_version', '1.1.0'),
       the_tuva_project.get_seed_database_folder(database)
   )) }}
 {% endmacro %}
@@ -111,7 +111,7 @@
   {% set object_path = the_tuva_project.get_seed_database_folder(database) ~ '/' ~ seed_object_name %}
   {{ return(the_tuva_project.load_package_seed(
       'tuva-core',
-      var('tuva_core_data_asset_version', '1.0.0'),
+      var('tuva_core_data_asset_version', '1.1.0'),
       object_path,
       compression,
       headers,
@@ -166,7 +166,7 @@
 {% macro load_versioned_synthetic_seed(seed_name, compression=true, headers=true, null_marker=true) %}
   {{ return(the_tuva_project.load_package_seed(
       'tuva-core',
-      var('tuva_core_data_asset_version', '1.0.0'),
+      var('tuva_core_data_asset_version', '1.1.0'),
       the_tuva_project.get_synthetic_seed_object_path(seed_name),
       compression,
       headers,

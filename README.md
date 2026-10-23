@@ -188,7 +188,7 @@ tuva-core/<data-asset-version>/
 └── value-sets/
 ```
 
-The `tuva_core_data_asset_version` variable defaults to `1.0.0` and is used
+The `tuva_core_data_asset_version` variable defaults to `1.1.0` and is used
 directly in this path. A root project can override it when intentionally
 testing a different complete snapshot. `custom_bucket_name` can point the same
 loader contracts at another bucket.

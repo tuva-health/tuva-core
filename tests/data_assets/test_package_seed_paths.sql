@@ -1,5 +1,5 @@
 {% set synthetic_size = the_tuva_project.get_synthetic_data_size() %}
-{% set asset_version = var('tuva_core_data_asset_version', '1.0.0') %}
+{% set asset_version = var('tuva_core_data_asset_version', '1.1.0') %}
 {% set default_bucket = var('custom_bucket_name', 'tuva-public-resources') %}
 {% set normalized_bucket = default_bucket | string | trim %}
 {% if normalized_bucket.startswith('s3://') %}
