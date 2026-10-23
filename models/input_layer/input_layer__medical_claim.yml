@@ -263,6 +263,12 @@ models:
         config:
           meta:
             data_type: float
+      - name: paid_reduced_by
+        description: >-
+          Amount by which the payer reduced its payment on the claim line under a prospective or population-based payment arrangement, such as the Medicare Population-Based Payment (PBP) reduction reported in CCLF demonstration code files. paid_amount reflects the payment after this reduction, so paid_amount plus paid_reduced_by approximates the fee-for-service payment before the reduction. Null when the source does not report a reduction.
+        config:
+          meta:
+            data_type: float
       - name: diagnosis_code_type
         description: >-
           Coding system used for diagnosis codes on the claim. Accepted values are icd-9-cm and icd-10-cm. This is header-level and should be consistent across all lines for the same claim_id.
