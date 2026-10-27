@@ -1722,7 +1722,7 @@ models:
       This model performs the following data transformations:
       1. Casts fields to the appropriate data types expected by the input_layer__eligibility table. This is meant to account for data types if they are not cast by the user in the input layer.
       2. Passes through column extensions whose names begin with the configured extension prefix.
-      3. Creates a synthetic join key called person_id_key. The person_id_key is created by concatenating person_id, member_id, data_source, payer, plan, enrollment_start_date, and enrollment_end_date. All key components except person_id are coalesced to an empty string before concatenation.
+      3. Creates a synthetic join key called person_id_key. The person_id_key is a stable_id_hash of person_id, member_id, data_source, payer, plan, enrollment_start_date, and the canonical enrollment_end_date. The hash encodes each component separately, so field boundaries and nulls cannot make two different eligibility spans share a key.
       4. Canonicalizes the backward-compatible open-span alias 9999-12-31 to a null enrollment_end_date.
 
       Primary key: person_id_key.
@@ -1742,7 +1742,7 @@ models:
       - name: person_id
         description: Unique identifier for each person in the dataset, cast to string from input_layer__eligibility.
       - name: person_id_key
-        description: Synthetic join key created by concatenating person_id, member_id, data_source, payer, plan, enrollment_start_date, and the canonical enrollment_end_date. All key components except person_id are coalesced to an empty string before concatenation.
+        description: Synthetic join key built with stable_id_hash from person_id, member_id, data_source, payer, plan, enrollment_start_date, and the canonical enrollment_end_date. Each component is encoded separately, so field boundaries and nulls cannot make two different eligibility spans share a key.
       - name: member_id
         description: Identifier assigned by the payer or health plan for the covered member, cast to string from input_layer__eligibility.
       - name: subscriber_id
