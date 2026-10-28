@@ -7,7 +7,12 @@ with encounter_date as (
     select
         cli.encounter_id
       , min(stg.start_date) as encounter_start_date
-      , max(stg.start_date) as encounter_end_date
+      , max(
+          case
+            when stg.end_date >= stg.start_date then stg.end_date
+            else stg.start_date
+          end
+        ) as encounter_end_date
     from {{ ref('encounters__stg_medical_claim') }} as stg
     inner join {{ ref('encounters__orphaned_claims') }} as cli
       on stg.claim_id = cli.claim_id

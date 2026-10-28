@@ -13,7 +13,12 @@ with expected as (
   select
       orphan.encounter_id
     , min(claim.start_date) as encounter_start_date
-    , max(claim.start_date) as encounter_end_date
+    , max(
+        case
+          when claim.end_date >= claim.start_date then claim.end_date
+          else claim.start_date
+        end
+      ) as encounter_end_date
   from {{ ref('encounters__stg_medical_claim') }} as claim
   inner join {{ ref('encounters__orphaned_claims') }} as orphan
     on claim.claim_id = orphan.claim_id

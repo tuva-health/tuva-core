@@ -324,3 +324,129 @@ unit_tests:
           encounter_id: '3fea38bb36c37ec87adde74cfe8825ab'
           encounter_type: 'orphaned claim'
           encounter_group: 'other'
+
+  - name: test_orphaned_claim_encounter_end_date_uses_line_end_dates
+    description: >
+      An orphaned claim encounter spans the service dates of its claim lines.
+      The encounter end date is the latest line end date, falling back to the
+      line start date when the end date is missing or precedes the start
+      date, so a multi-day claim without line-level dates keeps its claim end
+      date instead of collapsing to the start date.
+    model: orphaned_claim__encounter_grain
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    given:
+      - input: ref('encounters__stg_medical_claim')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set numeric_type = 'numeric' if target.type == 'bigquery' else 'decimal(28, 4)' %}
+          select
+              'multi-day-claim' as claim_id
+            , 1 as claim_line_number
+            , 'undetermined' as claim_type
+            , cast('2024-01-01' as date) as start_date
+            , cast('2024-01-10' as date) as end_date
+            , 'person-1|source-a' as patient_data_source_id
+            , 'source-a' as data_source
+            , cast(100 as {{ numeric_type }}) as paid_amount
+            , cast(120 as {{ numeric_type }}) as allowed_amount
+            , cast(150 as {{ numeric_type }}) as charge_amount
+            , cast(null as {{ string_type }}) as diagnosis_code_1
+            , cast(null as {{ string_type }}) as diagnosis_code_type
+            , cast(null as {{ string_type }}) as facility_npi
+            , cast(null as {{ string_type }}) as place_of_service_code
+            , cast(null as {{ string_type }}) as place_of_service_description
+          union all
+          select 'multi-line-claim', 1, 'professional', cast('2024-02-01' as date), cast('2024-02-04' as date), 'person-1|source-a', 'source-a', cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }})
+          union all
+          select 'multi-line-claim', 2, 'professional', cast('2024-02-02' as date), cast('2024-02-02' as date), 'person-1|source-a', 'source-a', cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }})
+          union all
+          select 'missing-end-claim', 1, 'professional', cast('2024-03-01' as date), cast(null as date), 'person-1|source-a', 'source-a', cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }})
+          union all
+          select 'missing-end-claim', 2, 'professional', cast('2024-03-03' as date), cast(null as date), 'person-1|source-a', 'source-a', cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }})
+          union all
+          select 'reversed-dates-claim', 1, 'professional', cast('2024-04-05' as date), cast('2024-04-01' as date), 'person-1|source-a', 'source-a', cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(10 as {{ numeric_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }}), cast(null as {{ string_type }})
+      - input: ref('encounters__orphaned_claims')
+        format: sql
+        rows: |
+          select
+              'multi-day-claim' as claim_id
+            , 1 as claim_line_number
+            , 'source-a' as data_source
+            , 'orphan-multi-day' as encounter_id
+            , 'orphaned claim' as encounter_type
+            , 'other' as encounter_group
+          union all
+          select 'multi-line-claim', 1, 'source-a', 'orphan-multi-line', 'orphaned claim', 'other'
+          union all
+          select 'multi-line-claim', 2, 'source-a', 'orphan-multi-line', 'orphaned claim', 'other'
+          union all
+          select 'missing-end-claim', 1, 'source-a', 'orphan-missing-end', 'orphaned claim', 'other'
+          union all
+          select 'missing-end-claim', 2, 'source-a', 'orphan-missing-end', 'orphaned claim', 'other'
+          union all
+          select 'reversed-dates-claim', 1, 'source-a', 'orphan-reversed-dates', 'orphaned claim', 'other'
+      - input: ref('encounters__stg_eligibility')
+        format: sql
+        rows: |
+          select
+              'person-1|source-a' as patient_data_source_id
+            , cast('1960-01-01' as date) as birth_date
+            , 'female' as sex
+            , 'white' as race
+            , 1 as patient_row_num
+      - input: ref('service_category__service_category_grouper')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set integer_type = 'int64' if target.type == 'bigquery' else 'bigint' %}
+          select
+              cast(null as {{ string_type }}) as claim_id
+            , cast(null as {{ integer_type }}) as claim_line_number
+            , cast(null as {{ string_type }}) as data_source
+            , cast(null as {{ string_type }}) as service_category_2
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('provider_data__provider')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as npi
+            , cast(null as {{ string_type }}) as provider_organization_name
+            , cast(null as {{ string_type }}) as primary_specialty_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('terminology__icd_10_cm')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as icd_10_cm
+            , cast(null as {{ string_type }}) as long_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+      - input: ref('terminology__icd_9_cm')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as icd_9_cm
+            , cast(null as {{ string_type }}) as long_description
+          from (select 1 as _tuva_empty_fixture) as _tuva_empty_fixture where 1 = 0
+    expect:
+      rows:
+        - encounter_id: orphan-multi-day
+          encounter_start_date: 2024-01-01
+          encounter_end_date: 2024-01-10
+          claim_count: 1
+        - encounter_id: orphan-multi-line
+          encounter_start_date: 2024-02-01
+          encounter_end_date: 2024-02-04
+          claim_count: 1
+        - encounter_id: orphan-missing-end
+          encounter_start_date: 2024-03-01
+          encounter_end_date: 2024-03-03
+          claim_count: 1
+        - encounter_id: orphan-reversed-dates
+          encounter_start_date: 2024-04-05
+          encounter_end_date: 2024-04-05
+          claim_count: 1
