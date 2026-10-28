@@ -41,11 +41,26 @@ select
     , hcpcs_modifier_4
     , hcpcs_modifier_5
     , rendering_npi
-    , rendnpi.npi as rendering_name
+    , case
+        when rendnpi.entity_type_code = '1' then
+          cast({{ concat_custom(["rendnpi.provider_last_name", "', '", "rendnpi.provider_first_name"]) }} as {{ dbt.type_string() }})
+        else
+          cast(rendnpi.provider_organization_name as {{ dbt.type_string() }})
+      end as rendering_name
     , billing_npi
-    , billnpi.npi as billing_name
+    , case
+        when billnpi.entity_type_code = '1' then
+          cast({{ concat_custom(["billnpi.provider_last_name", "', '", "billnpi.provider_first_name"]) }} as {{ dbt.type_string() }})
+        else
+          cast(billnpi.provider_organization_name as {{ dbt.type_string() }})
+      end as billing_name
     , facility_npi
-    , facnpi.npi as facility_name
+    , case
+        when facnpi.entity_type_code = '1' then
+          cast({{ concat_custom(["facnpi.provider_last_name", "', '", "facnpi.provider_first_name"]) }} as {{ dbt.type_string() }})
+        else
+          cast(facnpi.provider_organization_name as {{ dbt.type_string() }})
+      end as facility_name
     , paid_date
     , paid_amount
     , allowed_amount
