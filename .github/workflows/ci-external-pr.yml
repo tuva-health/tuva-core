@@ -87,18 +87,39 @@ jobs:
               return;
             }
 
+            // pulls.base.sha stays at the last PR update. GitHub still rebuilds
+            // refs/pull/N/merge onto the current base branch, so compare the
+            // first parent to main from this same step.
+            let baseHead;
+            try {
+              ({ data: baseHead } = await github.rest.repos.getCommit({
+                ...context.repo,
+                ref: "refs/heads/main"
+              }));
+            } catch (error) {
+              core.setFailed(`Could not resolve main: ${error.message}`);
+              return;
+            }
+
             const parentShas = mergeCommit.parents.map((parent) => parent.sha);
             if (
               parentShas.length !== 2 ||
-              parentShas[0] !== pr.base.sha ||
+              parentShas[0] !== baseHead.sha ||
               parentShas[1] !== pr.head.sha
             ) {
               core.setFailed(`PR #${prNumber} changed while its test merge was being resolved.`);
               return;
             }
 
+            if (pr.base.sha !== baseHead.sha) {
+              core.notice(
+                `PR #${prNumber} still reports base ${pr.base.sha}; ` +
+                `its test merge is on current main ${baseHead.sha}.`
+              );
+            }
+
             core.setOutput("pr_number", String(prNumber));
-            core.setOutput("base_sha", pr.base.sha);
+            core.setOutput("base_sha", baseHead.sha);
             core.setOutput("head_sha", pr.head.sha);
             core.setOutput("merge_sha", mergeCommit.sha);
             core.setOutput("schema_prefix", `ci_pr_${prNumber}_${pr.head.sha.slice(0, 8)}`);

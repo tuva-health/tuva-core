@@ -47,7 +47,7 @@ on:
         type: string
         default: ""
       base_sha:
-        description: Exact pull request base commit
+        description: Exact base commit the test merge is pinned to
         required: false
         type: string
         default: ""
@@ -486,11 +486,21 @@ jobs:
               ...context.repo,
               ref: `refs/pull/${prNumber}/merge`
             });
+            const expectedBase = process.env.EXPECTED_BASE_SHA;
+            const expectedHead = process.env.HEAD_SHA;
+            const parentShas = currentMerge.parents.map((parent) => parent.sha);
+            // pulls.base.sha can lag current main. External PR CI records the
+            // test merge's real base instead, so accept that parent pair as
+            // well as an unchanged event base SHA.
+            const mergeParentsMatchPin =
+              parentShas.length === 2 &&
+              parentShas[0] === expectedBase &&
+              parentShas[1] === expectedHead;
             const requestIsCurrent =
               pr.state === "open" &&
               pr.base.ref === "main" &&
-              pr.base.sha === process.env.EXPECTED_BASE_SHA &&
-              pr.head.sha === process.env.HEAD_SHA &&
+              (pr.base.sha === expectedBase || mergeParentsMatchPin) &&
+              pr.head.sha === expectedHead &&
               currentMerge.sha === process.env.MERGE_SHA;
             if (!requestIsCurrent) {
               core.setFailed(
@@ -1241,11 +1251,18 @@ jobs:
                 ...context.repo,
                 ref: `refs/pull/${prNumber}/merge`
               });
-
+              const parentShas = currentMerge.parents.map((parent) => parent.sha);
+              // pulls.base.sha can lag current main. External PR CI records the
+              // test merge's real base instead, so accept that parent pair as
+              // well as an unchanged event base SHA.
+              const mergeParentsMatchPin =
+                parentShas.length === 2 &&
+                parentShas[0] === expectedBase &&
+                parentShas[1] === expectedHead;
               const requestIsCurrent =
                 pr.state === "open" &&
                 pr.base.ref === "main" &&
-                pr.base.sha === expectedBase &&
+                (pr.base.sha === expectedBase || mergeParentsMatchPin) &&
                 pr.head.sha === expectedHead &&
                 currentMerge.sha === expectedMerge;
 
