@@ -167,8 +167,113 @@ unit_tests:
       - input: ref('provider_data__provider')
         format: sql
         rows: |
-          select '1234567890' as npi
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              '1234567890' as npi
+            , cast(null as {{ string_type }}) as entity_type_code
+            , cast(null as {{ string_type }}) as provider_first_name
+            , cast(null as {{ string_type }}) as provider_last_name
+            , cast(null as {{ string_type }}) as provider_organization_name
     expect:
       rows:
         - {claim_id: claim-1, drg_code: '065', discharge_disposition_code: '01', procedure_code_1: 0DTJ4ZZ}
         - {claim_id: claim-2, drg_code: '004', discharge_disposition_code: null, procedure_code_1: 0DTJ4ZZ}
+
+  - name: test_undetermined_claim_type_uses_provider_names
+    description: >-
+      Proves that the undetermined-claim fallback path fills rendering,
+      billing, and facility names with the provider name from provider data,
+      formatted as the normalized NPI path formats them, rather than with the
+      NPI value.
+    model: normalized_input__int_undetermined_claim_type
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized_input__stg_medical_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set null_columns = [
+              'person_id', 'member_id', 'payer', 'claim_start_date', 'claim_end_date',
+              'claim_line_start_date', 'claim_line_end_date', 'admission_date', 'discharge_date',
+              'admit_source_code', 'admit_type_code', 'discharge_disposition_code',
+              'place_of_service_code', 'bill_type_code', 'drg_code_type', 'drg_code',
+              'revenue_center_code', 'service_unit_quantity', 'hcpcs_code',
+              'hcpcs_modifier_1', 'hcpcs_modifier_2', 'hcpcs_modifier_3', 'hcpcs_modifier_4', 'hcpcs_modifier_5',
+              'paid_date', 'paid_amount', 'allowed_amount',
+              'charge_amount', 'coinsurance_amount', 'copayment_amount', 'deductible_amount',
+              'total_cost_amount', 'diagnosis_code_type', 'procedure_code_type'
+          ] %}
+          select
+              'claim-1' as claim_id
+            , 1 as claim_line_number
+            , 'undetermined' as claim_type
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            {% for column in null_columns %}
+            , cast(null as {{ string_type }}) as {{ column }}
+            {% endfor %}
+            , '1111111111' as rendering_npi
+            , '2222222222' as billing_npi
+            , '3333333333' as facility_npi
+            {% for i in range(1, 26) %}
+            , cast(null as {{ string_type }}) as diagnosis_code_{{ i }}
+            , cast(null as {{ string_type }}) as diagnosis_poa_{{ i }}
+            , cast(null as {{ string_type }}) as procedure_code_{{ i }}
+            , cast(null as date) as procedure_date_{{ i }}
+            {% endfor %}
+            , 'source' as data_source
+      - input: ref('terminology__admit_source')
+        format: sql
+        rows: |
+          select '1' as admit_source_code, 'Non-Health Care Facility Point of Origin' as admit_source_description
+      - input: ref('terminology__admit_type')
+        format: sql
+        rows: |
+          select '1' as admit_type_code, 'Emergency' as admit_type_description
+      - input: ref('terminology__discharge_disposition')
+        format: sql
+        rows: |
+          select '01' as discharge_disposition_code, 'Discharged to home/self-care (routine charge)' as discharge_disposition_description
+      - input: ref('terminology__place_of_service')
+        format: sql
+        rows: |
+          select '11' as place_of_service_code, 'Office' as place_of_service_description
+      - input: ref('terminology__bill_type')
+        format: sql
+        rows: |
+          select '111' as bill_type_code, 'Hospital Inpatient Admit Through Discharge Claim' as bill_type_description
+      - input: ref('terminology__ms_drg')
+        format: sql
+        rows: |
+          select '065' as ms_drg_code, 'Intracranial Hemorrhage or Cerebral Infarction with CC or TPA in 24 Hours' as ms_drg_description
+      - input: ref('terminology__apr_drg')
+        format: sql
+        rows: |
+          select '004' as apr_drg_code, 'TRACHEOSTOMY WITH MV >96 HOURS WITH EXTENSIVE PROCEDURE' as apr_drg_description
+      - input: ref('terminology__revenue_center')
+        format: sql
+        rows: |
+          select '0450' as revenue_center_code, 'Emergency Room' as revenue_center_description
+      - input: ref('provider_data__provider')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select '1111111111' as npi, '1' as entity_type_code, 'Jane' as provider_first_name, 'Smith' as provider_last_name, cast(null as {{ string_type }}) as provider_organization_name
+          union all
+          select '2222222222', '2', cast(null as {{ string_type }}), cast(null as {{ string_type }}), 'Valley Medical Group'
+          union all
+          select '3333333333', '2', cast(null as {{ string_type }}), cast(null as {{ string_type }}), 'General Hospital'
+    expect:
+      rows:
+        - claim_id: claim-1
+          rendering_npi: '1111111111'
+          rendering_name: Smith, Jane
+          billing_npi: '2222222222'
+          billing_name: Valley Medical Group
+          facility_npi: '3333333333'
+          facility_name: General Hospital
