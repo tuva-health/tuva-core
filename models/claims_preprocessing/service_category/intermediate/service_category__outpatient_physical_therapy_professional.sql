@@ -10,7 +10,27 @@ select distinct
   , med.claim_line_id
   , 'outpatient' as service_category_1
   , 'outpatient pt/ot/st' as service_category_2
-  , 'outpatient pt/ot/st' as service_category_3
+  , case
+      when med.ccs_category = '213' then 'outpatient physical therapy'
+      when med.ccs_category = '212' then 'outpatient occupational therapy'
+      when med.ccs_category = '215' then 'outpatient speech therapy'
+      when med.primary_specialty_description in (
+          'Physical Therapist'
+        , 'Physical Therapist in Private Practice'
+        , 'Physical Therapy Assistant'
+      ) then 'outpatient physical therapy'
+      when med.primary_specialty_description in (
+          'Occupational Health'
+        , 'Occupational Medicine'
+        , 'Occupational Therapist in Private Practice'
+        , 'Occupational Therapy Assistant'
+      ) then 'outpatient occupational therapy'
+      when med.primary_specialty_description in (
+          'Speech Language Pathologist'
+        , 'Speech-Language Assistant'
+      ) then 'outpatient speech therapy'
+      else 'outpatient pt/ot/st'
+    end as service_category_3
   , '{{ this.name }}' as source_model_name
   , cast('{{ var('tuva_last_run') }}' as {{ dbt.type_timestamp() }}) as tuva_last_run
 from {{ ref('service_category__stg_medical_claim') }} as med
