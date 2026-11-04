@@ -71,6 +71,89 @@ unit_tests:
           enrollment_end_date: null
           file_date: '2024-02-01'
 
+  - name: test_eligibility_casting_person_id_key_preserves_field_boundaries
+    description: >-
+      Proves person_id_key keeps distinct eligibility spans distinct when the
+      unseparated concatenation of person_id and member_id is identical, so
+      normalized__eligibility cannot join one person's dates and state to
+      another person's span.
+    model: int_eligibility_casting
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        _extension_columns_override: []
+        tuva_last_run: '2024-02-15 00:00:00'
+    given:
+      - input: ref('input_layer__eligibility')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set members = [
+              ('1', '12', '1950-01-01', 'CA'),
+              ('11', '2', '1960-06-15', 'TX')
+          ] %}
+          {% for person_id, member_id, birth_date, state in members %}
+          select
+              '{{ person_id }}' as person_id
+            , '{{ member_id }}' as member_id
+            , '{{ member_id }}' as subscriber_id
+            , 'self' as subscriber_relation
+            , cast('2023-01-01' as date) as enrollment_start_date
+            , cast('2023-12-31' as date) as enrollment_end_date
+            , 'payer' as payer
+            , 'commercial' as payer_type
+            , 'plan' as {{ plan_identifier }}
+            , 'First' as first_name
+            , 'Middle' as middle_name
+            , 'Last' as last_name
+            , 'Jr' as name_suffix
+            , '000-00-0000' as social_security_number
+            , '1 Main St' as address
+            , 'City' as city
+            , '{{ state }}' as state
+            , '00000' as zip_code
+            , '555-555-5555' as phone
+            , 'person@example.com' as email
+            , 'not_hispanic' as ethnicity
+            , 'male' as sex
+            , 'White' as race
+            , cast('{{ birth_date }}' as date) as birth_date
+            , cast(null as date) as death_date
+            , 0 as death_flag
+            , '0' as original_reason_entitlement_code
+            , '00' as dual_status_code
+            , '00' as medicare_status_code
+            , 'active' as enrollment_status
+            , 0 as hospice_flag
+            , 0 as institutional_snp_flag
+            , 0 as medicaid_indicator
+            , 0 as long_term_institutional_flag
+            , 'D' as part_d_raf_type
+            , 0 as low_income_subsidy_indicator
+            , 'gold' as metal_level
+            , 0 as csr_indicator
+            , 12 as enrollment_duration_months
+            , 0 as esrd_status
+            , 0 as transplant_duration_months
+            , 'group' as group_id
+            , 'Group' as group_name
+            , 'eligibility.csv' as file_name
+            , cast('2024-02-01' as date) as file_date
+            , cast('2024-02-02 00:00:00' as {{ timestamp_type }}) as ingest_datetime
+            , 'source' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+    expect:
+      rows:
+        - person_id: '1'
+          member_id: '12'
+          person_id_key: 02c0fd04b6b40c03e5a3f6983a0f3fb7
+        - person_id: '11'
+          member_id: '2'
+          person_id_key: 091cbcfcbd930f28e2dfb7191b1c4bc1
+
   - name: test_eligibility_dates_preserve_typed_dates_without_calendar_membership
     description: Already-typed birth, death, and enrollment dates pass through normalization without requiring membership in terminology__calendar; Logical Data Quality reports values outside the supported range separately.
     model: int_eligibility_dates_normalized
