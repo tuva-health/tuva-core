@@ -42,7 +42,7 @@ models:
         description: Timestamp for when the model was last run.
 
   - name: claims_enrollment__flag_rx_claims_with_enrollment
-    description: This table contains pharmacy claims with matching member-month enrollment. Eligibility matching stops at the calendar month containing the date portion of tuva_last_run for both open and finite spans, so future member months are not created.
+    description: This table contains pharmacy claims with matching member-month enrollment. Each claim line is matched to the member month of its dispensing date, falling back to the paid date when the dispensing date is missing, which is the same month Core cost reporting uses for pharmacy spend. Eligibility matching stops at the calendar month containing the date portion of tuva_last_run for both open and finite spans, so future member months are not created.
     config:
       schema: |
         {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_claims_preprocessing
@@ -70,6 +70,12 @@ models:
       - name: member_month_id
         description: 'The unique combination of person_id, member_id, year_month, payer, plan, and data source.'
       - name: paid_year_month
-        description: the year and month of the date the pharmacy claim was paid.
+        description: The year and month of the date the pharmacy claim was paid. Informational only; enrollment is matched on inferred_claim_date_year_month.
+      - name: inferred_claim_date_year_month
+        description: |
+          The year and month of the dispensing date. If the dispensing date is missing then the paid date is used.
+          This is the member month the claim line is matched to.
+      - name: inferred_claim_date_column_used
+        description: The name of the column used to populate inferred_claim_date_year_month.
       - name: tuva_last_run
         description: Timestamp for when the model was last run.
