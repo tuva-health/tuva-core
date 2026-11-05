@@ -1,0 +1,116 @@
+version: 2
+
+unit_tests:
+  - name: test_flag_rx_claims_with_enrollment_uses_dispensing_month
+    description: >-
+      Pharmacy claim lines are matched to the member month of their dispensing
+      date, falling back to the paid date only when the dispensing date is
+      missing, so enrollment agrees with the month Core cost reporting uses for
+      pharmacy spend. A fill dispensed in January but paid in February enrolls
+      in January, a fill with no paid date still enrolls, and a fill dispensed
+      after coverage ended is not enrolled just because it was paid during
+      coverage.
+    model: claims_enrollment__flag_rx_claims_with_enrollment
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        tuva_last_run: '2024-04-01 00:00:00'
+    given:
+      - input: ref('normalized__pharmacy_claim')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'rx-cross-month' as claim_id
+            , 1 as claim_line_number
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast('2024-01-30' as date) as dispensing_date
+            , cast('2024-02-10' as date) as paid_date
+          union all
+          select
+              'rx-no-paid-date' as claim_id
+            , 1 as claim_line_number
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast('2024-01-12' as date) as dispensing_date
+            , cast(null as date) as paid_date
+          union all
+          select
+              'rx-paid-date-fallback' as claim_id
+            , 1 as claim_line_number
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast(null as date) as dispensing_date
+            , cast('2024-01-05' as date) as paid_date
+          union all
+          select
+              'rx-dispensed-after-coverage' as claim_id
+            , 1 as claim_line_number
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+            , cast('2024-03-05' as date) as dispensing_date
+            , cast('2024-01-20' as date) as paid_date
+      - input: ref('member_month__member_month')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          select
+              'mm-202401' as member_month_id
+            , 'person-1' as person_id
+            , 'member-1' as member_id
+            , '202401' as year_month
+            , 'payer-1' as payer
+            , 'plan-1' as {{ plan_identifier }}
+            , 'source-1' as data_source
+    expect:
+      rows:
+        - claim_id: rx-cross-month
+          claim_line_number: 1
+          person_id: person-1
+          member_id: member-1
+          payer: payer-1
+          plan: plan-1
+          data_source: source-1
+          member_month_id: mm-202401
+          paid_year_month: '202402'
+          inferred_claim_date_year_month: '202401'
+          inferred_claim_date_column_used: dispensing_date
+          tuva_last_run: '2024-04-01 00:00:00'
+        - claim_id: rx-no-paid-date
+          claim_line_number: 1
+          person_id: person-1
+          member_id: member-1
+          payer: payer-1
+          plan: plan-1
+          data_source: source-1
+          member_month_id: mm-202401
+          paid_year_month: null
+          inferred_claim_date_year_month: '202401'
+          inferred_claim_date_column_used: dispensing_date
+          tuva_last_run: '2024-04-01 00:00:00'
+        - claim_id: rx-paid-date-fallback
+          claim_line_number: 1
+          person_id: person-1
+          member_id: member-1
+          payer: payer-1
+          plan: plan-1
+          data_source: source-1
+          member_month_id: mm-202401
+          paid_year_month: '202401'
+          inferred_claim_date_year_month: '202401'
+          inferred_claim_date_column_used: paid_date
+          tuva_last_run: '2024-04-01 00:00:00'
