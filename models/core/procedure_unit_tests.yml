@@ -63,6 +63,8 @@ unit_tests:
           select 'c' as claim_id, 1 as claim_line_number, 'a_b' as data_source, 'enc' as encounter_id, 1 as claim_line_attribution_number
           union all select 'b_c', 1, 'a', 'enc', 1
           union all select 'claim-literal', 1, 'source', 'no_encounter', 1
+      - input: ref('encounters__orphaned_claims')
+        rows: []
     expect:
       rows:
         - procedure_id: 80da4009cb1bc9fbfb1507b41852c44d
@@ -84,4 +86,83 @@ unit_tests:
           person_id: person-4
           claim_id: claim-literal
           encounter_id: no_encounter
+          data_source: source
+
+  - name: test_claims_procedure_uses_orphaned_claim_encounter
+    description: >-
+      Proves that line-level and claim-header procedures on a claim that did
+      not attach to any grouped encounter receive the orphaned claim encounter
+      published for that claim in core.medical_claim and core.encounter.
+    model: int_procedure_from_claims
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+    given:
+      - input: ref('normalized__medical_claim_procedures')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          select
+                'person-1' as person_id
+              , 'member-1' as member_id
+              , 'grouped-claim' as claim_id
+              , 1 as claim_line_number
+              , 1 as procedure_sequence_id
+              , cast('2024-01-01' as date) as procedure_date
+              , cast(null as {{ string_type }}) as practitioner_id
+              , 'hcpcs' as code_system
+              , 'A001' as source_code
+              , cast(null as {{ string_type }}) as source_description
+              , 'A001' as normalized_code
+              , cast(null as {{ string_type }}) as normalized_description
+              , cast(null as {{ string_type }}) as modifier_1
+              , cast(null as {{ string_type }}) as modifier_2
+              , cast(null as {{ string_type }}) as modifier_3
+              , cast(null as {{ string_type }}) as modifier_4
+              , cast(null as {{ string_type }}) as modifier_5
+              , cast(null as {{ timestamp_type }}) as ingest_datetime
+              , cast('2024-01-01 00:00:00' as {{ timestamp_type }}) as tuva_last_run
+              , 'source' as data_source
+          union all
+          select
+                'person-2', 'member-2', 'orphaned-claim', 1, 1, cast('2024-01-01' as date), null
+              , 'hcpcs', 'A001', null, 'A001', null
+              , null, null, null, null, null, null
+              , cast('2024-01-01 00:00:00' as {{ timestamp_type }}), 'source'
+          union all
+          select
+                'person-2', 'member-2', 'orphaned-claim', cast(null as integer), 1, cast('2024-01-01' as date), null
+              , 'icd-10-pcs', '0DB64Z3', null, '0DB64Z3', null
+              , null, null, null, null, null, null
+              , cast('2024-01-01 00:00:00' as {{ timestamp_type }}), 'source'
+      - input: ref('encounters__combined_claim_line_crosswalk')
+        format: sql
+        rows: |
+          select 'grouped-claim' as claim_id, 1 as claim_line_number, 'source' as data_source, 'grouped-enc' as encounter_id, 1 as claim_line_attribution_number
+      - input: ref('encounters__orphaned_claims')
+        format: sql
+        rows: |
+          select 'orphaned-claim' as claim_id, 1 as claim_line_number, 'source' as data_source, 'orphaned-enc' as encounter_id, 'orphaned claim' as encounter_type, 'other' as encounter_group
+    expect:
+      rows:
+        - person_id: person-1
+          claim_id: grouped-claim
+          encounter_id: grouped-enc
+          code_system: hcpcs
+          source_code: A001
+          data_source: source
+        - person_id: person-2
+          claim_id: orphaned-claim
+          encounter_id: orphaned-enc
+          code_system: hcpcs
+          source_code: A001
+          data_source: source
+        - person_id: person-2
+          claim_id: orphaned-claim
+          encounter_id: orphaned-enc
+          code_system: icd-10-pcs
+          source_code: 0DB64Z3
           data_source: source

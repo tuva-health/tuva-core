@@ -11,6 +11,15 @@ with encounter_crosswalk as (
         , encounter_id
     from {{ ref('encounters__combined_claim_line_crosswalk') }}
     where claim_line_attribution_number = 1
+
+    union all
+
+    select
+        claim_id
+        , claim_line_number
+        , data_source
+        , encounter_id
+    from {{ ref('encounters__orphaned_claims') }}
 )
 
 , distinct_claim_encounters as (
