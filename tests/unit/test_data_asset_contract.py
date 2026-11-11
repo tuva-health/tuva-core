@@ -247,7 +247,7 @@ class DataAssetContractTest(unittest.TestCase):
             project_text,
         )
         self.assertIsNotNone(asset_version_match)
-        self.assertEqual(asset_version_match.group(1), "1.0.0")
+        self.assertEqual(asset_version_match.group(1), "1.1.0")
         self.assertIn(
             'require-dbt-version: [">=1.10.5", "<3.0.0"]',
             project_text,
@@ -323,7 +323,7 @@ class DataAssetContractTest(unittest.TestCase):
             path_macro,
         )
         self.assertIn(
-            "'tuva-core',\n      var('tuva_core_data_asset_version', '1.0.0')",
+            "'tuva-core',\n      var('tuva_core_data_asset_version', '1.1.0')",
             path_macro,
         )
         self.assertIn("var('custom_bucket_name', 'tuva-public-resources')", path_macro)
