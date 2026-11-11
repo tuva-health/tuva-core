@@ -179,8 +179,8 @@ models:
       Creates one claim-level diagnosis array per claim_id and data_source for downstream claims-preprocessing algorithms that require a single diagnosis value per diagnosis position. This model uses normalized__medical_claim_diagnoses and intentionally preserves the legacy max() behavior used by service categories and encounters. Undetermined claims remain outside this algorithm-specific aggregate so restoring their canonical diagnosis facts does not replace line-level values with an arbitrary claim-level max().
     config:
       schema: |
-        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_intermediate
-        {% else %}intermediate{%- endif -%}
+        {%- if var('tuva_schema_prefix',None) != None -%}{{var('tuva_schema_prefix')}}_claims_preprocessing
+        {% else %}claims_preprocessing{%- endif -%}
       alias: int_claim_level_diagnosis
       materialized: table
       tags:
