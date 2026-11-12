@@ -1,0 +1,142 @@
+version: 2
+
+unit_tests:
+  - name: test_core_medication_preserves_ndc_segments_and_rejects_ambiguous_aliases
+    description: >
+      Keeps one medication row when two NDC packages share the same ten digits.
+      Exact eleven-digit and segmented ten-digit codes resolve independently;
+      ambiguous unsegmented ten-digit codes retain their original fields without
+      guessed enrichment. Every package and medication in this fixture is fabricated.
+    model: core__medication
+    config:
+      # Unit-test YAML is rendered before package macros are available.
+      enabled: "{{ var('clinical_enabled', false) is sameas true }}"
+    overrides:
+      vars:
+        clinical_enabled: true
+        claims_enabled: false
+        use_coderx_enterprise: true
+        _extension_columns_override: []
+    given:
+      - input: ref('normalized__medication')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set cases = [
+            ['canonical_a', 'ndc', '01234567890', none, none],
+            ['canonical_b', 'ndc', '12345067890', none, none],
+            ['segmented_a', 'ndc', '1234-5678-90', none, none],
+            ['segmented_b', 'ndc', '12345-678-90', none, none],
+            ['formatted_eleven', 'ndc', '01234-5678-90', none, none],
+            ['ambiguous_different_drugs', 'ndc', '1234567890', none, none],
+            ['ambiguous_same_drug', 'ndc', '5432109876', none, none],
+            ['unique_ten', 'ndc', '9999888877', none, none],
+            ['already_unsegmented_vendor', 'ndc', '8888777766', none, none],
+            ['segmented_input_unsegmented_vendor', 'ndc', '8888-7777-66', none, none],
+            ['wrong_segmentation_unsegmented_vendor', 'ndc', '88888-777-66', none, none],
+            ['five_four_one_input', 'ndc', '77777-6666-5', none, none],
+            ['five_three_two_input_unsegmented_vendor', 'ndc', '66666-555-44', none, none],
+            ['wrong_segmentation_five_four_one', 'ndc', '7777-7666-65', none, none],
+            ['extra_hyphen_is_not_a_segment_layout', 'ndc', '888--7777-66', none, none],
+            ['canonical_beats_malformed_alias', 'ndc', '22222222222', none, none],
+            ['supplied_segmented_ndc', 'local', 'local_code', '1234-5678-90', none],
+            ['supplied_ambiguous_ndc', 'local', 'local_code', '1234567890', none],
+            ['preserve_supplied_rxnorm', 'ndc', '1234567890', none, 'RX_SOURCE']
+          ] %}
+          {% for row in cases %}
+          select
+              '{{ row[0] }}' as medication_id
+            , 'clinical' as source_type
+            , 'person' as person_id
+            , cast(null as {{ string_type }}) as member_id
+            , 'patient' as patient_id
+            , cast(null as {{ string_type }}) as encounter_id
+            , cast(null as {{ string_type }}) as claim_id
+            , cast(null as integer) as claim_line_number
+            , cast(null as {{ string_type }}) as payer
+            , cast(null as {{ string_type }}) as {{ plan_identifier }}
+            , cast('2024-01-01' as date) as dispensing_date
+            , cast(null as date) as prescribing_date
+            , '{{ row[1] }}' as source_code_type
+            , '{{ row[2] }}' as source_code
+            , 'Original clinical description' as source_description
+            , {% if row[3] is not none %}'{{ row[3] }}'{% else %}cast(null as {{ string_type }}){% endif %} as ndc_code
+            , cast(null as {{ string_type }}) as ndc_description
+            , {% if row[4] is not none %}'{{ row[4] }}'{% else %}cast(null as {{ string_type }}){% endif %} as rxnorm_code
+            , cast(null as {{ string_type }}) as atc_code
+            , cast(null as {{ string_type }}) as route
+            , cast(null as {{ string_type }}) as strength
+            , 30 as quantity
+            , cast(null as {{ string_type }}) as quantity_unit
+            , 30 as days_supply
+            , cast(null as {{ string_type }}) as practitioner_id
+            , cast('2024-01-02 03:04:05' as {{ timestamp_type }}) as ingest_datetime
+            , cast('2024-01-01 00:00:00' as {{ timestamp_type }}) as tuva_last_run
+            , 'synthetic_fixture' as data_source
+          {% if not loop.last %}union all{% endif %}
+          {% endfor %}
+      - input: ref('core__stg_coderx_packages')
+        format: sql
+        rows: |
+          select '01234567890' as ndc11, '1234-5678-90' as ndc, 'RX_A' as drug_id, 'Drug A' as drug_name
+          union all select '12345067890', '12345-678-90', 'RX_B', 'Drug B'
+          union all select '05432109876', '5432-1098-76', 'RX_C', 'Drug C'
+          union all select '54321009876', '54321-098-76', 'RX_C', 'Drug C'
+          union all select '09999888877', '9999-8888-77', 'RX_D', 'Drug D'
+          union all select '08888777766', '8888777766', 'RX_E', 'Drug E'
+          union all select '11111111111', '22222-2222-22', 'RX_F', 'Drug F'
+          union all select '22222222222', '22222-222-22', 'RX_G', 'Drug G'
+          union all select '77777666605', '7777766665', 'RX_H', 'Drug H'
+          union all select '66666055544', '6666655544', 'RX_I', 'Drug I'
+          union all select '00888777766', '0888777766', 'RX_J', 'Drug J'
+      - input: ref('core__stg_coderx_drugs')
+        format: sql
+        rows: |
+          select 'RX_A' as drug_id, 'Drug A' as drug_name
+          union all select 'RX_B', 'Drug B'
+          union all select 'RX_C', 'Drug C'
+          union all select 'RX_D', 'Drug D'
+          union all select 'RX_E', 'Drug E'
+          union all select 'RX_F', 'Drug F'
+          union all select 'RX_G', 'Drug G'
+          union all select 'RX_H', 'Drug H'
+          union all select 'RX_I', 'Drug I'
+          union all select 'RX_J', 'Drug J'
+      - input: ref('core__stg_coderx_classes')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select
+              cast(null as {{ string_type }}) as drug_id
+            , cast(null as {{ string_type }}) as atc_1_code
+            , cast(null as {{ string_type }}) as atc_1_name
+            , cast(null as {{ string_type }}) as atc_2_code
+            , cast(null as {{ string_type }}) as atc_2_name
+            , cast(null as {{ string_type }}) as atc_3_code
+            , cast(null as {{ string_type }}) as atc_3_name
+            , cast(null as {{ string_type }}) as atc_4_code
+            , cast(null as {{ string_type }}) as atc_4_name
+          from (select 1 as empty_fixture) as empty_fixture where 1=0
+    expect:
+      rows:
+        - {medication_id: canonical_a, source_code: '01234567890', source_description: Original clinical description, ndc_code: '01234567890', rxnorm_code: RX_A}
+        - {medication_id: canonical_b, source_code: '12345067890', source_description: Original clinical description, ndc_code: '12345067890', rxnorm_code: RX_B}
+        - {medication_id: segmented_a, source_code: '1234-5678-90', source_description: Original clinical description, ndc_code: '01234567890', rxnorm_code: RX_A}
+        - {medication_id: segmented_b, source_code: '12345-678-90', source_description: Original clinical description, ndc_code: '12345067890', rxnorm_code: RX_B}
+        - {medication_id: formatted_eleven, source_code: '01234-5678-90', source_description: Original clinical description, ndc_code: '01234567890', rxnorm_code: RX_A}
+        - {medication_id: ambiguous_different_drugs, source_code: '1234567890', source_description: Original clinical description, ndc_code: null, rxnorm_code: null}
+        - {medication_id: ambiguous_same_drug, source_code: '5432109876', source_description: Original clinical description, ndc_code: null, rxnorm_code: null}
+        - {medication_id: unique_ten, source_code: '9999888877', source_description: Original clinical description, ndc_code: '09999888877', rxnorm_code: RX_D}
+        - {medication_id: already_unsegmented_vendor, source_code: '8888777766', source_description: Original clinical description, ndc_code: '08888777766', rxnorm_code: RX_E}
+        - {medication_id: segmented_input_unsegmented_vendor, source_code: '8888-7777-66', source_description: Original clinical description, ndc_code: '08888777766', rxnorm_code: RX_E}
+        - {medication_id: wrong_segmentation_unsegmented_vendor, source_code: '88888-777-66', source_description: Original clinical description, ndc_code: null, rxnorm_code: null}
+        - {medication_id: five_four_one_input, source_code: '77777-6666-5', source_description: Original clinical description, ndc_code: '77777666605', rxnorm_code: RX_H}
+        - {medication_id: five_three_two_input_unsegmented_vendor, source_code: '66666-555-44', source_description: Original clinical description, ndc_code: '66666055544', rxnorm_code: RX_I}
+        - {medication_id: wrong_segmentation_five_four_one, source_code: '7777-7666-65', source_description: Original clinical description, ndc_code: null, rxnorm_code: null}
+        - {medication_id: extra_hyphen_is_not_a_segment_layout, source_code: '888--7777-66', source_description: Original clinical description, ndc_code: null, rxnorm_code: null}
+        - {medication_id: canonical_beats_malformed_alias, source_code: '22222222222', source_description: Original clinical description, ndc_code: '22222222222', rxnorm_code: RX_G}
+        - {medication_id: supplied_segmented_ndc, source_code: local_code, source_description: Original clinical description, ndc_code: '1234-5678-90', rxnorm_code: RX_A}
+        - {medication_id: supplied_ambiguous_ndc, source_code: local_code, source_description: Original clinical description, ndc_code: '1234567890', rxnorm_code: null}
+        - {medication_id: preserve_supplied_rxnorm, source_code: '1234567890', source_description: Original clinical description, ndc_code: null, rxnorm_code: RX_SOURCE}
