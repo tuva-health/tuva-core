@@ -257,7 +257,7 @@ unit_tests:
               'claim_type', 'person_id', 'member_id', 'payer', 'drg_code_type', 'service_unit_quantity',
               'hcpcs_code', 'hcpcs_modifier_1', 'hcpcs_modifier_2', 'hcpcs_modifier_3', 'hcpcs_modifier_4',
               'hcpcs_modifier_5', 'rendering_tin', 'billing_tin', 'paid_date', 'paid_amount', 'allowed_amount',
-              'charge_amount', 'coinsurance_amount', 'copayment_amount', 'deductible_amount', 'total_cost_amount',
+              'charge_amount', 'coinsurance_amount', 'copayment_amount', 'deductible_amount', 'paid_reduced_by', 'total_cost_amount',
               'diagnosis_code_type', 'procedure_code_type', 'in_network_flag', 'file_date', 'ingest_datetime', 'file_name'
           ] %}
           select
