@@ -21,7 +21,7 @@ select
     , cast(med.payer as {{ dbt.type_string() }}) as payer
     , cast(med.{{ quote_column('plan') }} as {{ dbt.type_string() }}) as {{ quote_column('plan') }}
     , cast(coalesce(dates.minimum_claim_start_date, undetermined.claim_start_date) as date) as claim_start_date
-    , cast(coalesce(dates.maximum_claim_end_date, undetermined.claim_start_date) as date) as claim_end_date
+    , cast(coalesce(dates.maximum_claim_end_date, undetermined.claim_end_date) as date) as claim_end_date
     , cast(coalesce(claim_line_dates.normalized_claim_line_start_date, undetermined.claim_line_start_date) as date) as claim_line_start_date
     , cast(coalesce(claim_line_dates.normalized_claim_line_end_date, undetermined.claim_line_end_date) as date) as claim_line_end_date
     , cast(coalesce(dates.minimum_admission_date, undetermined.admission_date) as date) as admission_date
