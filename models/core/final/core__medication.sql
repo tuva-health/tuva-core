@@ -24,7 +24,7 @@
 
 {%- set use_coderx_enterprise = the_tuva_project.tuva_boolean_var('use_coderx_enterprise', false) -%}
 
-with coderx_package_keys as (
+with coderx_package_key_candidates as (
     select
           ndc11 as ndc_lookup_code
         , ndc11
@@ -40,8 +40,23 @@ with coderx_package_keys as (
         , drug_id
         , drug_name
     from {{ ref('core__stg_coderx_packages') }}
-    where ndc is not null
-      and replace(ndc, '-', '') <> ndc11
+    -- Only ten-digit aliases are eligible; malformed aliases cannot shadow an NDC11.
+    where {{ the_tuva_project.length("replace(ndc, '-', '')") }} = 10
+),
+
+coderx_package_keys as (
+    select
+          ndc_lookup_code
+        , min(ndc11) as ndc11
+        , min(drug_id) as drug_id
+        , min(drug_name) as drug_name
+    from (
+        select distinct ndc_lookup_code, ndc11, drug_id, drug_name
+        from coderx_package_key_candidates
+    ) as distinct_package_keys
+    group by ndc_lookup_code
+    -- An unsegmented ten-digit code can identify different packages, even for one drug.
+    having count(*) = 1
 ),
 
 all_medications as (
@@ -101,7 +116,7 @@ source_mapping as (
     from all_medications as meds
     left join coderx_package_keys as source_package
         on lower(cast(meds.source_code_type as {{ dbt.type_string() }})) = 'ndc'
-       and replace(cast(meds.source_code as {{ dbt.type_string() }}), '-', '')
+       and {{ the_tuva_project.normalize_ndc_lookup_code('meds.source_code') }}
            = source_package.ndc_lookup_code
     left join {{ ref('core__stg_coderx_drugs') }} as source_drug
         on lower(cast(meds.source_code_type as {{ dbt.type_string() }})) = 'rxnorm'
@@ -157,7 +172,7 @@ select
     {{ tuva_metadata_columns }}
 from source_mapping as sm
 left join coderx_package_keys as ndc_package
-    on replace(cast(sm.ndc_code as {{ dbt.type_string() }}), '-', '')
+    on {{ the_tuva_project.normalize_ndc_lookup_code('sm.ndc_code') }}
        = ndc_package.ndc_lookup_code
 left join {{ ref('core__stg_coderx_drugs') }} as rxnorm_drug
     on coalesce(sm.rxnorm_code, ndc_package.drug_id) = rxnorm_drug.drug_id

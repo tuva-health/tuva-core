@@ -2206,6 +2206,8 @@ models:
 
       When clinical data is enabled, this model pulls from input_layer.medication through normalized__medication. When claims data is enabled, this model pulls from core.pharmacy_claim through core__stg_claims_medication. Tuva derives NDC, RxNorm, and ATC codes and descriptions from the package's CodeRx Open data assets when standard medication codes are available. When `use_coderx_enterprise` is true, Tuva's shared CodeRx interfaces instead use user-managed `packages`, `drugs`, and `classes` relations in the target database's `coderx` schema throughout pharmacy normalization, medication enrichment, data quality, and dependent packages. If CodeRx supplies multiple class rows for a drug, Tuva selects the lexicographically first non-null level 3 ATC code to preserve the medication grain. Claims-derived rows use pharmacy_claim_id as medication_id, set source_type to claims, populate claim_id and claim_line_number from core.pharmacy_claim, and populate practitioner_id from the prescribing provider NPI.
 
+      NDC enrichment preserves eleven-digit codes and the segment positions of hyphenated ten-digit codes. An unsegmented ten-digit alias is used only when it identifies one package. Ambiguous aliases retain the original medication fields without guessed package enrichment or additional medication rows.
+
       Clinical and claims records retain their source identifiers in medication_id. Because those two domains can independently reuse the same value in one data source, source_type is part of the public key.
 
       Primary key: medication_id, source_type, data_source.
