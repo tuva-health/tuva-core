@@ -144,6 +144,8 @@ unit_tests:
           select 'claim_1' as claim_id, 1 as claim_line_number, 'source' as data_source, 'encounter_1' as encounter_id, 1 as claim_line_attribution_number
           union all
           select 'claim_1', 2, 'source', 'encounter_1', 1
+      - input: ref('encounters__orphaned_claims')
+        rows: []
     expect:
       rows:
         - claim_id: claim_1

@@ -164,6 +164,8 @@ unit_tests:
           select 'claim-sentinel', 1, 'source', '<NULL>', 1
           union all
           select 'c', 1, 'a%7Cb', 'enc', 1
+      - input: ref('encounters__orphaned_claims')
+        rows: []
     expect:
       rows:
         - condition_id: 7fab3aacdcf1b74933250087b512eb58
@@ -245,4 +247,54 @@ unit_tests:
           condition_rank: 1
           status: null
           condition_type: billing_diagnosis
+          data_source: source
+
+  - name: test_claims_condition_uses_orphaned_claim_encounter
+    description: >-
+      Proves that diagnoses on a claim line that did not attach to any
+      grouped encounter receive the orphaned claim encounter published for
+      that line in core.medical_claim and core.encounter, while lines in the
+      claim-line crosswalk keep their grouped encounter.
+    model: int_condition_from_claims
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        tuva_last_run: '2024-01-01 00:00:00'
+    given:
+      - input: ref('normalized__medical_claim_diagnoses')
+        format: sql
+        rows: |
+          {% set plan_identifier = '[plan]' if target.type in ['fabric', 'sqlserver'] else '`plan`' if target.type == 'bigquery' else 'plan' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          select 'mc-1' as medical_claim_id, 'grouped-claim' as claim_id, 1 as claim_line_number, 'professional' as claim_type, 'person-1' as person_id, 'member-1' as member_id, 'payer' as payer, 'plan' as {{ plan_identifier }}, cast('2024-01-01' as date) as recorded_date, 1 as condition_rank, 'icd-10-cm' as code_system, 'A001' as source_code, 'A001' as normalized_code, 'Long description' as normalized_description, cast(null as {{ string_type }}) as present_on_admit_code, cast(null as {{ string_type }}) as present_on_admit_description, cast('2024-01-01 00:00:00' as {{ timestamp_type }}) as tuva_last_run, 'source' as data_source
+          union all
+          select 'mc-2', 'orphaned-claim', 1, 'professional', 'person-2', 'member-2', 'payer', 'plan', cast('2024-01-01' as date), 1, 'icd-10-cm', 'A001', 'A001', 'Long description', null, null, cast('2024-01-01 00:00:00' as {{ timestamp_type }}), 'source'
+          union all
+          select 'mc-2', 'orphaned-claim', 1, 'professional', 'person-2', 'member-2', 'payer', 'plan', cast('2024-01-01' as date), 2, 'icd-10-cm', 'B001', 'B001', 'Long description', null, null, cast('2024-01-01 00:00:00' as {{ timestamp_type }}), 'source'
+      - input: ref('encounters__combined_claim_line_crosswalk')
+        format: sql
+        rows: |
+          select 'grouped-claim' as claim_id, 1 as claim_line_number, 'source' as data_source, 'grouped-enc' as encounter_id, 1 as claim_line_attribution_number
+      - input: ref('encounters__orphaned_claims')
+        format: sql
+        rows: |
+          select 'orphaned-claim' as claim_id, 1 as claim_line_number, 'source' as data_source, 'orphaned-enc' as encounter_id, 'orphaned claim' as encounter_type, 'other' as encounter_group
+    expect:
+      rows:
+        - claim_id: grouped-claim
+          encounter_id: grouped-enc
+          condition_rank: 1
+          source_code: A001
+          data_source: source
+        - claim_id: orphaned-claim
+          encounter_id: orphaned-enc
+          condition_rank: 1
+          source_code: A001
+          data_source: source
+        - claim_id: orphaned-claim
+          encounter_id: orphaned-enc
+          condition_rank: 2
+          source_code: B001
           data_source: source
