@@ -1,0 +1,63 @@
+version: 2
+
+unit_tests:
+  - name: test_core_patient_age_counts_whole_years
+    description: >
+      Verifies that age counts completed years at tuva_last_run, so a patient
+      whose birthday falls a few days after the run date is not aged up early
+      by leap days, and that age_group follows the same age.
+    model: core__patient
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+        clinical_enabled: false
+        tuva_last_run: '2024-04-01 00:00:00'
+    given:
+      - input: ref('normalized__eligibility_remove_duplicates')
+        format: sql
+        rows: |
+          {% set string_type = 'string' if target.type in ['bigquery', 'databricks'] else 'varchar' %}
+          {% set timestamp_type = 'datetime2(0)' if target.type in ['fabric', 'sqlserver'] else 'timestamp' %}
+          {% set decimal_type = 'numeric' if target.type == 'bigquery' else 'decimal(18, 4)' %}
+          {# person_id, birth_date: birthday on the run date, the day after it, nine days after it, 29 February #}
+          {% set fixture_rows = [
+              ['birthday_on_run_date', "cast('1980-04-01' as date)"]
+            , ['birthday_next_day', "cast('1980-04-02' as date)"]
+            , ['birthday_in_nine_days', "cast('1934-04-10' as date)"]
+            , ['leap_day_birthday', "cast('2000-02-29' as date)"]
+          ] %}
+          {% for row in fixture_rows %}
+          {% if not loop.first %}union all{% endif %}
+          select
+              '{{ row[0] }}' as person_id
+            , cast(null as {{ string_type }}) as name_suffix
+            , cast(null as {{ string_type }}) as first_name
+            , cast(null as {{ string_type }}) as middle_name
+            , cast(null as {{ string_type }}) as last_name
+            , 'unknown' as sex
+            , 'unknown' as race
+            , {{ row[1] }} as birth_date
+            , cast(null as date) as death_date
+            , 0 as death_flag
+            , cast(null as {{ string_type }}) as social_security_number
+            , cast(null as {{ string_type }}) as address
+            , cast(null as {{ string_type }}) as city
+            , cast(null as {{ string_type }}) as state
+            , cast(null as {{ string_type }}) as zip_code
+            , cast(null as {{ string_type }}) as county
+            , cast(null as {{ decimal_type }}) as latitude
+            , cast(null as {{ decimal_type }}) as longitude
+            , cast(null as {{ string_type }}) as phone
+            , cast(null as {{ string_type }}) as email
+            , cast(null as {{ string_type }}) as ethnicity
+            , cast('2024-04-01 00:00:00' as {{ timestamp_type }}) as tuva_last_run
+            , 'source' as data_source
+          {% endfor %}
+    expect:
+      rows:
+        - {person_id: birthday_on_run_date, age: 44, age_group: '40-49'}
+        - {person_id: birthday_next_day, age: 43, age_group: '40-49'}
+        - {person_id: birthday_in_nine_days, age: 89, age_group: '80-89'}
+        - {person_id: leap_day_birthday, age: 24, age_group: '20-29'}
