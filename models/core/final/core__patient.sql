@@ -4,8 +4,18 @@
    )
 }}
 
+{#- Completed years: subtract one when the birthday (MM-DD) falls after tuva_last_run_date. -#}
 {%- set age_expression -%}
-cast(floor({{ datediff('birth_date', 'tuva_last_run_date', 'hour') }} / 8760.0) as {{ dbt.type_int() }})
+cast(
+    {{ date_part('year', 'tuva_last_run_date') }} - {{ date_part('year', 'birth_date') }}
+    - case
+        when substring(cast(tuva_last_run_date as {{ dbt.type_string() }}), 6, 5)
+           < substring(cast(birth_date as {{ dbt.type_string() }}), 6, 5)
+            then 1
+        else 0
+      end
+    as {{ dbt.type_int() }}
+)
 {%- endset -%}
 
 {%- set age_group_expression -%}
